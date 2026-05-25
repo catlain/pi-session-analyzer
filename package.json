@@ -1,1 +1,26 @@
-{"name":"session-analyzer","type":"commonjs","devDependencies":{"@earendil-works/pi-coding-agent":"^0.74.0","@types/node":"^25.6.2","typebox":"^1.1.38","typescript":"^6.0.3","vitest":"^4.1.5"}}
+{
+  "name": "pi-session-analyzer",
+  "version": "0.1.0",
+  "type": "commonjs",
+  "main": "index.ts",
+  "description": "Session search and analysis extension for pi-coding-agent",
+  "dependencies": {
+    "@pi-atelier/shared-utils": "github:catlain/pi-shared-utils"
+  },
+  "bundledDependencies": [
+    "@pi-atelier/shared-utils"
+  ],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.74.0"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": { "optional": true }
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.74.0",
+    "@types/node": "^25.6.2",
+    "typebox": "^1.1.38",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  }
+}
