@@ -1,0 +1,4 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"include": ["index.ts", "analyze.ts", "search.ts", "search-file.ts", "digest.ts", "core.ts", "audit.ts", "audit-rules.ts", "audit-types.ts"]
+}
