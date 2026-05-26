@@ -5,7 +5,7 @@
   "main": "index.ts",
   "description": "Session search and analysis extension for pi-coding-agent",
   "dependencies": {
-    "@pi-atelier/shared-utils": "github:catlain/pi-shared-utils"
+    "@pi-atelier/shared-utils": "file:../pi-shared-utils"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": ">=0.74.0"

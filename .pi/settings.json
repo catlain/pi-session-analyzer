@@ -1,0 +1,7 @@
+{
+  "mcp": {
+    "enabled": [
+      "code-graph-pi-session-analyzer"
+    ]
+  }
+}
