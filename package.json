@@ -7,9 +7,6 @@
   "dependencies": {
     "@pi-atelier/shared-utils": "github:catlain/pi-shared-utils"
   },
-  "bundledDependencies": [
-    "@pi-atelier/shared-utils"
-  ],
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": ">=0.74.0"
   },
