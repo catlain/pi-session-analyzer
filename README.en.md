@@ -1,4 +1,4 @@
-[English](README.en.md) | 程序中文文档
+[中文文档](README.md) | English
 
 # pi-session-analyzer
 
@@ -20,24 +20,24 @@ pi generates rich session logs (JSONL), but they're scattered across directories
 ```
 ┌─── session_search ──────────────────────────────┐
 │                                                  │
-│  grep ──→ 全文搜索所有会话（支持正则）           │
-│  file ──→ 查找修改过特定文件的会话               │
-│  list ──→ 列出最近 N 个会话                      │
+│  grep ──→ Full-text search across all sessions   │
+│  file ──→ Find sessions that modified a file     │
+│  list ──→ List recent N sessions                 │
 │                                                  │
 └──────────────────────┬───────────────────────────┘
                        │
-                       ▼ 找到 sessionId
+                       ▼ found sessionId
 ┌─── session_analyze ─────────────────────────────┐
 │                                                  │
-│  summary ──→ 元信息 + 摘要（首次分析首选）       │
-│  entries ──→ 条目列表（支持 grep + 分页）        │
-│  timeline ─→ 时间线（自动标注 [B1][B2] 分支）    │
-│  chain ────→ 子代理调用链追踪                    │
-│  audit ────→ 规则违规检查                        │
-│  digest ───→ user/assistant 对话序列             │
-│  branches ─→ 并行分支分析（/tree 产生）          │
-│  takeover ─→ 5 维接手报告                        │
-│  raw ──────→ 原始 JSONL 数据                     │
+│  summary ──→ Metadata + abstract (start here)   │
+│  entries ──→ Entry list (with grep + pagination) │
+│  timeline ─→ Timeline (auto-labels [B1][B2] ...) │
+│  chain ────→ Sub-agent call chain trace          │
+│  audit ────→ Rule violation check                │
+│  digest ───→ User/assistant conversation thread  │
+│  branches ─→ Parallel branch analysis (/tree)    │
+│  takeover ─→ 5-dimension handoff report          │
+│  raw ──────→ Raw JSONL data                      │
 │                                                  │
 └──────────────────────────────────────────────────┘
 ```
