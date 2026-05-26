@@ -2,7 +2,7 @@
  * session_search file 模式 — 查找修改过特定文件的会话
  */
 
-import { truncatedResult } from "@pi-atelier/shared-utils";
+import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 import {
   type Entry,
   readJsonl,

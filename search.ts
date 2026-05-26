@@ -4,7 +4,7 @@
 
 import { basename } from "node:path";
 import { readFile } from "node:fs/promises";
-import { truncatedResult } from "@pi-atelier/shared-utils";
+import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 
 // session_search 的输出阈值
 const SEARCH_MAX_LINES = 500;

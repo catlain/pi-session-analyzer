@@ -19,7 +19,7 @@ import {
   buildEntryMap,
   assignBranch,
 } from "./branches";
-import { truncatedResult } from "@pi-atelier/shared-utils";
+import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 
 export { doDigest } from "./digest";
 

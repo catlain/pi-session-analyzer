@@ -5,7 +5,7 @@
  * 纯程序提取，零 LLM 成本。
  */
 
-import { truncatedResult } from "@pi-atelier/shared-utils";
+import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 import { type Entry, fmtTime } from "./core";
 
 /** 提取所有 user/assistant 文本消息，按序列出 */

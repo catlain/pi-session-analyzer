@@ -12,7 +12,7 @@ import {
 	fmtTime,
 	getSessionInfoFromEntries,
 } from "./core";
-import { truncatedResult } from "@pi-atelier/shared-utils";
+import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 import {
 	type TakeoverReport,
 	MAX_INTENT_MSGS,
