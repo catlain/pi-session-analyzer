@@ -1,16 +1,5 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "declaration": true,
-    "sourceMap": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true
-  },
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {},
   "include": ["index.ts", "analyze.ts", "search.ts", "search-file.ts", "digest.ts", "core.ts", "audit.ts", "audit-rules.ts", "audit-types.ts"]
 }
