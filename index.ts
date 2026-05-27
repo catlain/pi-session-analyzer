@@ -110,6 +110,9 @@ export default function (pi: ExtensionAPI) {
       grep: Type.Optional(
         Type.String({ description: "entries 模式：关键词过滤，只返回包含此关键词的条目。支持正则表达式（如 'error|fail'）" }),
       ),
+      compact: Type.Optional(
+        Type.Boolean({ description: "entries 模式：紧凑输出（去 type 列、role 缩写、时间只保留 HH:MM、预览 60 字符）。默认 false" }),
+      ),
     }),
 
     async execute(_id: string, params: any, _signal: any, _onUpdate: any, _ctx: any): Promise<any> {
@@ -129,7 +132,7 @@ export default function (pi: ExtensionAPI) {
           case "summary":
             return doSummary(entries, resolved.filepath);
           case "entries":
-            return doEntries(entries, params.limit ?? 20, params.offset, params.grep);
+            return doEntries(entries, params.limit ?? 20, params.offset, params.grep, params.compact);
           case "timeline":
             return doTimeline(entries);
           case "chain":

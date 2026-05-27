@@ -1,5 +1,5 @@
 /**
- * session_analyze 工具实现 — 单会话分析（summary/entries/timeline/chain/raw）
+ * session_analyze 工具实现 - 单会话分析(summary/entries/timeline/chain/raw)
  */
 
 import {
@@ -23,7 +23,7 @@ import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 
 export { doDigest } from "./digest";
 
-// session_analyze 的输出阈值：结构化数据不需要那么大
+// session_analyze 的输出阈值:结构化数据不需要那么大
 const ANALYZE_MAX_LINES = 500;
 const ANALYZE_MAX_BYTES = 20 * 1024; // 20KB
 
@@ -57,71 +57,8 @@ export function doSummary(entries: Entry[], filepath: string) {
   return truncatedResult(text, { toolName: "session_analyze", label: "summary", maxLines: ANALYZE_MAX_LINES, maxBytes: ANALYZE_MAX_BYTES });
 }
 
-/** 提取条目的文本内容（用于 grep 过滤） */
-function extractEntryText(entry: Entry): string {
-  if (entry.message) {
-    const content = entry.message.content;
-    const text = typeof content === "string" ? content : extractText(content);
-    return `${entry.message.role ?? ""} ${text} ${entry.message.model ?? ""} ${entry.message.toolName ?? ""}`;
-  }
-  if (entry.type === "session") {
-    return `[session] cwd=${entry.cwd ?? ""} id=${entry.id ?? ""}`;
-  }
-  return entry.type;
-}
-
-export function doEntries(entries: Entry[], limit: number, offset?: number, grep?: string) {
-  let items = entries;
-
-  // 关键词过滤（先过滤再切片，减少输出量）
-  if (grep) {
-    const keyword = grep.toLowerCase();
-    items = items.filter((entry) => {
-      // 搜索文本内容
-      const text = extractEntryText(entry);
-      return text.toLowerCase().includes(keyword);
-    });
-  }
-
-  // 偏移 + 限制
-  const totalCount = items.length;
-  const start = offset ? Math.max(0, offset) : Math.max(0, items.length - limit);
-  items = items.slice(start, start + limit);
-  const lines = items.map((entry, idx) => {
-    const role = entry.message?.role ?? "";
-    const time = entry.timestamp ? fmtTime(entry.timestamp) : "";
-    let text = "";
-
-    if (entry.message) {
-      const content = entry.message.content;
-      if (typeof content === "string") {
-        text = content.slice(0, 100);
-      } else if (Array.isArray(content)) {
-        text = extractText(content).slice(0, 100);
-        if (!text) {
-          const calls = content
-            .filter((p) => p.type === "toolCall")
-            .map((p) => `${p.name}(...)`);
-          if (calls.length) text = calls.join(", ");
-        }
-      }
-    } else if (entry.type === "session") {
-      text = `[session start] cwd=${entry.cwd ?? "?"}`;
-    }
-
-    return `${String(idx).padStart(4)} | ${entry.type.padEnd(8)} | ${role.padEnd(12)} | ${time} | ${text}`;
-  });
-
-  const rangeDesc = offset != null
-    ? `条目 ${start}-${start + items.length - 1}/${totalCount}`
-    : `最后 ${items.length}/${entries.length} 条`;
-  const filterDesc = grep ? `（过滤: "${grep}"）` : '';
-
-  return truncatedResult(
-    `条目列表 ${rangeDesc}${filterDesc}：\n${lines.join("\n")}`,
-    { toolName: "session_analyze", label: "entries", maxLines: ANALYZE_MAX_LINES, maxBytes: ANALYZE_MAX_BYTES },
-  );
-}
+export { doEntries, type DoEntriesOptions } from "./entries";
+export { extractEntryText } from "./entries";
 
 export function doTimeline(entries: Entry[]) {
   const msgEntries = entries.filter(
@@ -211,11 +148,11 @@ export function doTimeline(entries: Entry[]) {
   }
 
   const branchInfo = hasBranches
-    ? `\n⚠️ 该会话有 ${branchPoints.length} 个分支点（/tree 操作），带 [B1]/[B2] 标签区分。使用 action='branches' 查看详细分支分析。\n`
+    ? `\n⚠️ 该会话有 ${branchPoints.length} 个分支点(/tree 操作),带 [B1]/[B2] 标签区分。使用 action='branches' 查看详细分支分析。\n`
     : "";
 
   return truncatedResult(
-    `${branchInfo}事件时间线（${msgEntries.length} 条消息）：\n${lines.join("\n")}`,
+    `${branchInfo}事件时间线(${msgEntries.length} 条消息):\n${lines.join("\n")}`,
     { toolName: "session_analyze", label: "timeline", maxLines: ANALYZE_MAX_LINES, maxBytes: ANALYZE_MAX_BYTES },
   );
 }
@@ -290,7 +227,7 @@ export function doRaw(entries: Entry[], limit: number) {
   );
 
   return truncatedResult(
-    `原始数据（最后 ${items.length}/${entries.length} 条）：\n${lines.join("\n\n")}`,
+    `原始数据(最后 ${items.length}/${entries.length} 条):\n${lines.join("\n\n")}`,
     { toolName: "session_analyze", label: "raw", maxLines: ANALYZE_MAX_LINES, maxBytes: ANALYZE_MAX_BYTES },
   );
 }
@@ -300,21 +237,21 @@ export function doBranches(entries: Entry[]) {
 
   if (branchPoints.length === 0) {
     return {
-      content: [{ type: "text" as const, text: "该会话没有分支（/tree 操作产生的平行分支）。所有消息在一条线性链上。" }],
+      content: [{ type: "text" as const, text: "该会话没有分支(/tree 操作产生的平行分支)。所有消息在一条线性链上。" }],
       details: {},
     };
   }
 
   const lines: string[] = [];
   const totalBranches = branchPoints.reduce((s, bp) => s + bp.branches.length, 0);
-  lines.push(`发现 ${branchPoints.length} 个分支点，共 ${totalBranches} 条分支\n`);
+  lines.push(`发现 ${branchPoints.length} 个分支点,共 ${totalBranches} 条分支\n`);
 
   for (const bp of branchPoints) {
     lines.push(`## 分支点 [${fmtTime(bp.timestamp)}]`);
     lines.push(`  助手回复: ${bp.brief || "(无文本)"}\n`);
 
     for (const branch of bp.branches) {
-      lines.push(`### 分支 ${branch.index}（${branch.count} 条消息）`);
+      lines.push(`### 分支 ${branch.index}(${branch.count} 条消息)`);
       lines.push(`  触发: ${branch.triggerMsg}`);
       lines.push(`  时间: ${fmtTime(branch.startTime)}\n`);
 
