@@ -30,21 +30,23 @@ export function extractMatchContext(
   const content = entry.message.content;
   const parts: string[] = [];
 
+  const sanitize = (s: string) => s.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+
   if (typeof content === "string") {
     gRegex.lastIndex = 0;
     for (const m of content.matchAll(gRegex)) {
-      const start = Math.max(0, m.index - 40);
-      const end = Math.min(content.length, m.index + m[0].length + 40);
-      parts.push(content.slice(start, end).replace(/\n/g, "↵"));
+      const start = Math.max(0, m.index - 25);
+      const end = Math.min(content.length, m.index + m[0].length + 25);
+      parts.push(sanitize(content.slice(start, end)));
     }
   } else if (Array.isArray(content)) {
     for (const part of content) {
       if (part.type === "text" && part.text) {
         gRegex.lastIndex = 0;
         for (const m of part.text.matchAll(gRegex)) {
-          const start = Math.max(0, m.index - 40);
-          const end = Math.min(part.text.length, m.index + m[0].length + 40);
-          parts.push(part.text.slice(start, end).replace(/\n/g, "↵"));
+          const start = Math.max(0, m.index - 25);
+          const end = Math.min(part.text.length, m.index + m[0].length + 25);
+          parts.push(sanitize(part.text.slice(start, end)));
         }
       }
       if (part.type === "toolCall" && part.name) {
@@ -52,7 +54,7 @@ export function extractMatchContext(
         const combined = `${part.name} ${argsStr}`;
         gRegex.lastIndex = 0;
         if (gRegex.test(combined)) {
-          parts.push(`🛠 ${part.name}: ${argsStr.slice(0, 200)}`);
+          parts.push(`🛠 ${part.name}: ${argsStr.slice(0, 100)}`);
         }
       }
     }

@@ -135,7 +135,7 @@ export async function doGrep(
       const summary = extractSummary(sessionEntries);
       allMatches.push({
         sessionId: parseSessionId(fp),
-        firstMsg: summary.firstMsg.slice(0, 60),
+        firstMsg: summary.firstMsg.slice(0, 40),
         matches: matches.slice(0, 5),
       });
     }
@@ -150,9 +150,9 @@ export async function doGrep(
   const output = allMatches
     .map(
       (s) =>
-        `━━━ ${s.sessionId.slice(0, 18)}  ${s.firstMsg}\n` +
+        `── ${s.sessionId.slice(0, 12)}  ${s.firstMsg}\n` +
         s.matches
-          .map((m) => `  [${m.lineno}] ${m.role} | ${m.text.slice(0, 200)}`)
+          .map((m) => `  [${m.lineno}] ${m.role} | ${m.text.slice(0, 80)}`)
           .join("\n"),
     )
     .join("\n\n");
