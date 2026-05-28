@@ -5,6 +5,7 @@
 import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 import { type Entry, fmtTime } from "./core";
 import { extractText } from "./core";
+import { parseRange, indexDetail, filterByToolName } from "./entries-nav";
 
 // ── compact 模式辅助 ──────────────────────────────────
 
@@ -39,6 +40,9 @@ export interface DoEntriesOptions {
 	offset?: number;
 	grep?: string;
 	compact?: boolean;
+	range?: string;
+	index?: number;
+	toolName?: string;
 }
 
 // ── extractEntryText（从 analyze.ts 移出）──────────────
@@ -89,12 +93,18 @@ export function doEntries(
 	let offsetVal: number | undefined;
 	let grepVal: string | undefined;
 	let compactVal: boolean | undefined;
+	let rangeVal: string | undefined;
+	let indexVal: number | undefined;
+	let toolNameVal: string | undefined;
 
 	if (typeof limitOrOpts === "object") {
 		limitVal = limitOrOpts.limit ?? 20;
 		offsetVal = limitOrOpts.offset;
 		grepVal = limitOrOpts.grep;
 		compactVal = limitOrOpts.compact;
+		rangeVal = limitOrOpts.range;
+		indexVal = limitOrOpts.index;
+		toolNameVal = limitOrOpts.toolName;
 	} else {
 		limitVal = limitOrOpts;
 		offsetVal = offset;
@@ -104,14 +114,18 @@ export function doEntries(
 
 	let items = entries;
 
-	// 关键词过滤（先过滤再切片，减少输出量）
-	// 支持正则表达式（如 'error|fail'）；无效正则 fallback 到子串匹配
+	// ── toolName 过滤 ────────────────────────────
+	if (toolNameVal) {
+		items = filterByToolName(items, toolNameVal);
+	}
+
+	// ── grep 过滤（支持正则；无效正则 fallback 子串匹配）
 	if (grepVal) {
 		let regex: RegExp | undefined;
 		try {
 			regex = new RegExp(grepVal, "i");
 		} catch {
-			// 无效正则（如单独的 '('），fallback 到大小写不敏感子串匹配
+			// 无效正则 fallback
 		}
 		if (regex) {
 			items = items.filter((entry) => {
@@ -127,15 +141,42 @@ export function doEntries(
 		}
 	}
 
-	// 偏移 + 限制
+	// ── index 详情模式（互斥，直接返回） ────────
+	if (indexVal != null) {
+		return truncatedResult(
+			indexDetail(items, indexVal, compactVal),
+			{ toolName: "session_analyze", label: "entries", maxLines: ANALYZE_MAX_LINES, maxBytes: ANALYZE_MAX_BYTES },
+		);
+	}
+
+	// ── range / offset 切片 ─────────────────────
 	const totalCount = items.length;
-	const start = offsetVal != null ? Math.max(0, offsetVal) : Math.max(0, items.length - limitVal);
+	let start: number;
+
+	if (rangeVal) {
+		const parsed = parseRange(rangeVal, totalCount);
+		if (!parsed) {
+			return truncatedResult(
+				`❌ 无效 range 格式: "${rangeVal}"（支持 "last:N" 或 "M-N"）`,
+				{ toolName: "session_analyze", label: "entries", maxLines: 100, maxBytes: 10_000 },
+			);
+		}
+		start = parsed.start;
+		limitVal = parsed.end - parsed.start + 1;
+	} else if (offsetVal != null) {
+		start = Math.max(0, offsetVal);
+	} else {
+		// 无参默认：显示前 N 条（含用户意图）
+		start = 0;
+	}
+
 	items = items.slice(start, start + limitVal);
 
 	const isCompact = compactVal === true;
 	const previewLen = isCompact ? 60 : 100;
 
 	const lines = items.map((entry, idx) => {
+		const globalIdx = start + idx;
 		const role = entry.message?.role ?? "";
 		const timeFull = entry.timestamp ? fmtTime(entry.timestamp) : "";
 		const timeShort = entry.timestamp ? fmtTimeShort(entry.timestamp) : "";
@@ -160,18 +201,32 @@ export function doEntries(
 
 		if (isCompact) {
 			const r = roleShort(role).padEnd(7);
-			return `[${String(idx).padStart(3)}] ${r} ${timeShort} ${text}`;
+			return `[${String(globalIdx).padStart(3)}] ${r} ${timeShort} ${text}`;
 		}
-		return `${String(idx).padStart(4)} | ${entry.type.padEnd(8)} | ${role.padEnd(12)} | ${timeFull} | ${text}`;
+		return `${String(globalIdx).padStart(4)} | ${entry.type.padEnd(8)} | ${role.padEnd(12)} | ${timeFull} | ${text}`;
 	});
 
-	const rangeDesc = offsetVal != null
-		? `条目 ${start}-${start + items.length - 1}/${totalCount}`
-		: `最后 ${items.length}/${entries.length} 条`;
-	const filterDesc = grepVal ? `（过滤: "${grepVal}"）` : '';
+	// ── rangeDesc ───────────────────────────────
+	let rangeDesc: string;
+	let tailHint = "";
+
+	if (rangeVal) {
+		rangeDesc = `条目 ${start}-${start + items.length - 1}/${totalCount}`;
+	} else if (offsetVal != null) {
+		rangeDesc = `条目 ${start}-${start + items.length - 1}/${totalCount}`;
+	} else {
+		// 无参默认：显示前 N 条
+		rangeDesc = `前 ${items.length}/${entries.length} 条`;
+		if (start + limitVal < entries.length) {
+			const remaining = entries.length - start - limitVal;
+			tailHint = `\n\n共 ${entries.length} 条，用 range='last:${remaining}' 查看末尾`;
+		}
+	}
+	const filterDesc = grepVal ? `（过滤: "${grepVal}"）` : "";
+	const toolDesc = toolNameVal ? `（工具: "${toolNameVal}"）` : "";
 
 	return truncatedResult(
-		`条目列表 ${rangeDesc}${filterDesc}：\n${lines.join("\n")}`,
+		`条目列表 ${rangeDesc}${filterDesc}${toolDesc}：\n${lines.join("\n")}${tailHint}`,
 		{ toolName: "session_analyze", label: "entries", maxLines: ANALYZE_MAX_LINES, maxBytes: ANALYZE_MAX_BYTES },
 	);
 }

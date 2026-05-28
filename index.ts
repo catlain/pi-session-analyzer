@@ -77,7 +77,7 @@ export default function (pi: ExtensionAPI) {
       "分析单个 Pi 会话。\n"
       + "⚠ 注意：action 只接受以下值，不要传 grep/file/list（那是 session_search 的 action）。\n"
       + "- summary: 元信息+摘要（首次分析首选）\n"
-      + "- entries: 条目列表（支持 offset 偏移 + grep 关键词过滤）\n"
+      + "- entries: 条目列表（无参显示前 N 条含用户意图；支持 range/offset/grep/toolName 过滤）\n"
       + "- timeline: 时间线（自动标注分支）\n"
       + "- chain: 子代理链\n"
       + "- raw: 原始 JSONL\n"
@@ -102,16 +102,25 @@ export default function (pi: ExtensionAPI) {
         Type.Literal("takeover"),
       ]),
       limit: Type.Optional(
-        Type.Number({ description: "限制条目数", default: 20 }),
+        Type.Number({ description: "限制条目数（默认 20）", default: 20 }),
       ),
       offset: Type.Optional(
-        Type.Number({ description: "entries 模式：从第 N 条开始（0-based），默认从尾部倒数。结合 limit 使用可实现分页浏览大会话" }),
+        Type.Number({ description: "entries: 从第 N 条开始（0-based）。与 range 互斥，range 优先" }),
       ),
       grep: Type.Optional(
-        Type.String({ description: "entries 模式：关键词过滤，只返回包含此关键词的条目。支持正则表达式（如 'error|fail'）" }),
+        Type.String({ description: "entries: 关键词/正则过滤（如 'error|fail'）" }),
       ),
       compact: Type.Optional(
-        Type.Boolean({ description: "entries 模式：紧凑输出（去 type 列、role 缩写、时间只保留 HH:MM、预览 60 字符）。默认 false" }),
+        Type.Boolean({ description: "entries: 紧凑输出（去 type 列、role 缩写、预览 60 字符）。默认 false" }),
+      ),
+      range: Type.Optional(
+        Type.String({ description: "entries: 范围直取。'last:50' 查看末尾，'100-150' 指定区间。与 offset 互斥，优先级高于 offset" }),
+      ),
+      index: Type.Optional(
+        Type.Number({ description: "entries: 查看第 N 条详情（0-based，含前后 3 条上下文）" }),
+      ),
+      toolName: Type.Optional(
+        Type.String({ description: "entries: 按工具名过滤（如 'edit'、'bash'），只返回包含该工具调用的条目" }),
       ),
     }),
 
@@ -132,7 +141,15 @@ export default function (pi: ExtensionAPI) {
           case "summary":
             return doSummary(entries, resolved.filepath);
           case "entries":
-            return doEntries(entries, params.limit ?? 20, params.offset, params.grep, params.compact);
+            return doEntries(entries, {
+              limit: params.limit ?? 20,
+              offset: params.offset,
+              grep: params.grep,
+              compact: params.compact,
+              range: params.range,
+              index: params.index,
+              toolName: params.toolName,
+            });
           case "timeline":
             return doTimeline(entries);
           case "chain":

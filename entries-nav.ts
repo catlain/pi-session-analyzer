@@ -1,0 +1,125 @@
+/**
+ * entries 导航辅助函数 — parseRange / index 详情 / toolName 过滤
+ */
+
+import { fmtTime } from "./core";
+import type { Entry } from "./core";
+
+// ── range 解析 ────────────────────────────────────────
+
+export function parseRange(range: string, total: number): { start: number; end: number } | null {
+	// "last:N"
+	const lastM = range.match(/^last:(\d+)$/i);
+	if (lastM) {
+		const n = parseInt(lastM[1], 10);
+		return { start: Math.max(0, total - n), end: total - 1 };
+	}
+	// "M-N"
+	const rangeM = range.match(/^(\d+)-(\d+)$/);
+	if (rangeM) {
+		const s = parseInt(rangeM[1], 10);
+		const e = parseInt(rangeM[2], 10);
+		if (s > e) return null;
+		return { start: s, end: Math.min(e, total - 1) };
+	}
+	return null;
+}
+
+// ── index 详情块 ──────────────────────────────────────
+
+const INDEX_DETAIL_MAX = 5000;
+
+/** 判断条目是否与指定 toolName 相关 */
+function hasToolName(entry: Entry, toolName: string): boolean {
+	if (!entry.message) return false;
+
+	// assistant 消息含 toolCalls
+	if (entry.message.role === "assistant" && Array.isArray(entry.message.content)) {
+		for (const part of entry.message.content) {
+			if (part.type === "toolCall" && part.name === toolName) return true;
+		}
+	}
+
+	// toolResult 消息的 message.toolName
+	if (entry.message.toolName === toolName) return true;
+
+	return false;
+}
+
+/** 按工具名过滤条目 */
+export function filterByToolName(entries: Entry[], toolName: string): Entry[] {
+	return entries.filter((e) => hasToolName(e, toolName));
+}
+
+/** 获取条目完整文本（不截断） */
+function fullText(entry: Entry): string {
+	if (!entry.message) {
+		if (entry.type === "session") return `[session start] cwd=${entry.cwd ?? "?"}`;
+		return entry.type;
+	}
+	const content = entry.message.content;
+	if (typeof content === "string") return content;
+	if (Array.isArray(content)) {
+		const parts: string[] = [];
+		for (const part of content) {
+			if (part.type === "text" && part.text) parts.push(part.text);
+			if (part.type === "toolCall") {
+				parts.push(`${part.name}(${typeof part.arguments === "string" ? part.arguments : JSON.stringify(part.arguments ?? "")})`);
+			}
+		}
+		return parts.join("\n");
+	}
+	return "";
+}
+
+/** 生成 index 详情输出 */
+export function indexDetail(entries: Entry[], index: number, compact?: boolean): string {
+	if (index < 0 || index >= entries.length) {
+		return `❌ 索引 ${index} 超出范围（0-${entries.length - 1}）`;
+	}
+
+	const CONTEXT = 3; // 前后各 3 条上下文
+	const ctxStart = Math.max(0, index - CONTEXT);
+	const ctxEnd = Math.min(entries.length - 1, index + CONTEXT);
+
+	const lines: string[] = [];
+
+	for (let i = ctxStart; i <= ctxEnd; i++) {
+		const entry = entries[i];
+		const isTarget = i === index;
+
+		if (isTarget) {
+			// 详情块
+			const role = entry.message?.role ?? "";
+			const time = entry.timestamp ? fmtTime(entry.timestamp) : "";
+			const text = fullText(entry);
+			const display = text.length > INDEX_DETAIL_MAX
+				? text.slice(0, INDEX_DETAIL_MAX) + `\n... (截断，原文 ${text.length} 字符)`
+				: text;
+
+			lines.push(`┌─── [${i}] ${role} ${time} ───`);
+			if (entry.message?.toolName) {
+				lines.push(`│ 工具: ${entry.message.toolName}`);
+			}
+			if (entry.message?.role === "assistant" && Array.isArray(entry.message?.content)) {
+				for (const part of entry.message.content) {
+					if (part.type === "toolCall") {
+						const args = typeof part.arguments === "string" ? part.arguments : JSON.stringify(part.arguments ?? "");
+						lines.push(`│ 调用: ${part.name}(${args.slice(0, 80)})`);
+					}
+				}
+			}
+			for (const line of display.split("\n")) {
+				lines.push(`│ ${line}`);
+			}
+			lines.push("└───");
+		} else {
+			// 上下文行 — 简要摘要
+			const role = entry.message?.role ?? "";
+			const text = fullText(entry).slice(0, compact ? 60 : 100).replace(/\n/g, "\\n");
+			lines.push(`[${i}] ${compact ? role.slice(0, 7).padEnd(7) : role.padEnd(12)} ${text || "(empty)"}`);
+		}
+	}
+
+	return lines.join("\n");
+}
