@@ -1,20 +1,8 @@
-import { defineConfig } from "vitest/config";
 import path from "node:path";
+import { createConfig } from "../vitest.config.base";
 
-export default defineConfig({
-	resolve: {
-	  alias: {
-	    // mock 替代 @pi-atelier/shared-utils/tool-output
-	    "@pi-atelier/shared-utils/tool-output": path.resolve(__dirname, "tests/__mocks__/tool-output.ts"),
-	  },
-	},
-	test: {
-		include: ["tests/**/*.test.ts"],
-		environment: "node",
-		testTimeout: 10000,
-		coverage: {
-			provider: "v8" as const,
-			reporter: ["text", "html"],
-		},
+export default createConfig({
+	alias: {
+		"@pi-atelier/shared-utils/tool-output": path.resolve(__dirname, "tests/__mocks__/tool-output.ts"),
 	},
 });
