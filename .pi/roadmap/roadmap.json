@@ -1,0 +1,51 @@
+{
+  "source": "tooling-guardrails",
+  "syncedAt": "2026-05-28",
+  "stories": [
+    {
+      "id": "E6.S1",
+      "title": "给 entries action 补 range/index/toolName 参数",
+      "description": "参考 payload messages.ts 的 parseRange + detailBlock + searchableText 模式，给 entries action 增加三个新参数：range（区间/尾部直达）、index（指定条目详情+上下文）、toolName（按工具名过滤）",
+      "status": "todo",
+      "createdDate": "2026-05-28",
+      "tasks": [
+        {
+          "id": "E6.S1.T1",
+          "title": "重构 doEntries — 新增 range/index/toolName 参数",
+          "status": "doing",
+          "priority": "high",
+          "createdDate": "2026-05-28",
+          "doingDate": "2026-05-28",
+          "doingSessionId": "2026-05-28T01-54-46-235Z_019e6c4a-8f5b-7350-b1d7-bf817ca28832"
+        },
+        {
+          "id": "E6.S1.T2",
+          "title": "修改无参默认行为 — 改为显示前 N 条（含用户原始意图），尾部用 range=\"last:N\"",
+          "status": "doing",
+          "priority": "high",
+          "createdDate": "2026-05-28",
+          "doingDate": "2026-05-28",
+          "doingSessionId": "2026-05-28T01-54-46-235Z_019e6c4a-8f5b-7350-b1d7-bf817ca28832"
+        },
+        {
+          "id": "E6.S1.T3",
+          "title": "更新 index.ts schema — 添加 range/index/toolName 参数声明 + description",
+          "status": "doing",
+          "priority": "high",
+          "createdDate": "2026-05-28",
+          "doingDate": "2026-05-28",
+          "doingSessionId": "2026-05-28T01-54-46-235Z_019e6c4a-8f5b-7350-b1d7-bf817ca28832"
+        },
+        {
+          "id": "E6.S1.T4",
+          "title": "补测试 — range/index/toolName/默认行为变更 + 回归",
+          "status": "doing",
+          "priority": "medium",
+          "createdDate": "2026-05-28",
+          "doingDate": "2026-05-28",
+          "doingSessionId": "2026-05-28T01-54-46-235Z_019e6c4a-8f5b-7350-b1d7-bf817ca28832"
+        }
+      ]
+    }
+  ]
+}

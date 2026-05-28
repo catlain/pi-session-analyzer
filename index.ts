@@ -6,7 +6,7 @@
  * - session_analyze: 单会话分析（summary/entries/timeline/chain/raw/audit）
  */
 
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { AgentToolResult, ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { getSessionDir, resolveSession, readJsonlFile } from "./core";
 import { doList, doGrep } from "./search";
@@ -23,6 +23,79 @@ import { doDigest } from "./digest";
 import { doAudit } from "./audit";
 import { doTakeover } from "./takeover";
 
+// ── Schema 定义 ──────────────────────────────────────────
+
+const sessionSearchSchema = Type.Object({
+  action: Type.Union([Type.Literal("grep"), Type.Literal("file"), Type.Literal("list")]),
+  query: Type.Optional(
+    Type.String({ description: "搜索关键词 (grep) 或文件路径 (file)" }),
+  ),
+  limit: Type.Optional(
+    Type.Number({ description: "限制结果数，默认 20", default: 20 }),
+  ),
+  editOnly: Type.Optional(
+    Type.Boolean({ description: "仅 grep 模式：只搜 edit/write 操作" }),
+  ),
+});
+
+const sessionAnalyzeSchema = Type.Object({
+  sessionId: Type.String({ description: "会话 ID（支持前缀匹配）" }),
+  action: Type.Union([
+    Type.Literal("summary"), Type.Literal("entries"), Type.Literal("timeline"),
+    Type.Literal("chain"), Type.Literal("raw"), Type.Literal("audit"),
+    Type.Literal("digest"), Type.Literal("branches"),
+    Type.Literal("takeover"),
+  ]),
+  limit: Type.Optional(
+    Type.Number({ description: "限制条目数（默认 20）", default: 20 }),
+  ),
+  offset: Type.Optional(
+    Type.Number({ description: "entries: 从第 N 条开始（0-based）。与 range 互斥，range 优先" }),
+  ),
+  grep: Type.Optional(
+    Type.String({ description: "entries: 关键词/正则过滤（如 'error|fail'）" }),
+  ),
+  compact: Type.Optional(
+    Type.Boolean({ description: "entries: 紧凑输出（去 type 列、role 缩写、预览 60 字符）。默认 false" }),
+  ),
+  range: Type.Optional(
+    Type.String({ description: "entries: 范围直取。'last:50' 查看末尾，'100-150' 指定区间。与 offset 互斥，优先级高于 offset" }),
+  ),
+  index: Type.Optional(
+    Type.Number({ description: "entries: 查看第 N 条详情（0-based，含前后 3 条上下文）" }),
+  ),
+  toolName: Type.Optional(
+    Type.String({ description: "entries: 按工具名过滤。支持通配符（'code_graph*'）和多值（'edit|write'）" }),
+  ),
+  file: Type.Optional(
+    Type.String({ description: "entries: 按文件路径过滤（匹配工具参数中的路径）。支持通配符（'*.test.ts'）和多值（'a.ts|b.ts'）" }),
+  ),
+});
+
+// ── Params 类型推断 ─────────────────────────────────────
+
+type SessionSearchParams = {
+  action: "grep" | "file" | "list";
+  query?: string;
+  limit?: number;
+  editOnly?: boolean;
+};
+
+type SessionAnalyzeParams = {
+  sessionId: string;
+  action: "summary" | "entries" | "timeline" | "chain" | "raw" | "audit" | "digest" | "branches" | "takeover";
+  limit?: number;
+  offset?: number;
+  grep?: string;
+  compact?: boolean;
+  range?: string;
+  index?: number;
+  toolName?: string;
+  file?: string;
+};
+
+// ── 扩展入口 ─────────────────────────────────────────────
+
 export default function (pi: ExtensionAPI) {
   // ── session_search ──────────────────────────────────────
 
@@ -36,20 +109,15 @@ export default function (pi: ExtensionAPI) {
       "Use session_search to find past discussions, decisions, or file modifications across all Pi sessions.",
       "Use action='grep' for keyword search, action='file' to find sessions that edited a file, action='list' to browse recent sessions.",
     ],
-    parameters: Type.Object({
-      action: Type.Union([Type.Literal("grep"), Type.Literal("file"), Type.Literal("list")]),
-      query: Type.Optional(
-        Type.String({ description: "搜索关键词 (grep) 或文件路径 (file)" }),
-      ),
-      limit: Type.Optional(
-        Type.Number({ description: "限制结果数，默认 20", default: 20 }),
-      ),
-      editOnly: Type.Optional(
-        Type.Boolean({ description: "仅 grep 模式：只搜 edit/write 操作" }),
-      ),
-    }),
+    parameters: sessionSearchSchema,
 
-    async execute(_id: string, params: any, _signal: any, _onUpdate: any, _ctx: any): Promise<any> {
+    async execute(
+      _id: string,
+      params: SessionSearchParams,
+      _signal: AbortSignal,
+      _onUpdate: undefined,
+      _ctx: undefined,
+    ): Promise<AgentToolResult> {
       try {
         const dir = getSessionDir();
         switch (params.action) {
@@ -93,38 +161,15 @@ export default function (pi: ExtensionAPI) {
       "Use action='takeover' to generate a handoff report for continuing work from a previous session (5 dimensions: user intent, modified files, recent steps, next steps, key decisions).",
       "When timeline shows [B1]/[B2] labels, use action='branches' for detailed per-branch analysis.",
     ],
-    parameters: Type.Object({
-      sessionId: Type.String({ description: "会话 ID（支持前缀匹配）" }),
-      action: Type.Union([
-        Type.Literal("summary"), Type.Literal("entries"), Type.Literal("timeline"),
-        Type.Literal("chain"), Type.Literal("raw"), Type.Literal("audit"),
-        Type.Literal("digest"), Type.Literal("branches"),
-        Type.Literal("takeover"),
-      ]),
-      limit: Type.Optional(
-        Type.Number({ description: "限制条目数（默认 20）", default: 20 }),
-      ),
-      offset: Type.Optional(
-        Type.Number({ description: "entries: 从第 N 条开始（0-based）。与 range 互斥，range 优先" }),
-      ),
-      grep: Type.Optional(
-        Type.String({ description: "entries: 关键词/正则过滤（如 'error|fail'）" }),
-      ),
-      compact: Type.Optional(
-        Type.Boolean({ description: "entries: 紧凑输出（去 type 列、role 缩写、预览 60 字符）。默认 false" }),
-      ),
-      range: Type.Optional(
-        Type.String({ description: "entries: 范围直取。'last:50' 查看末尾，'100-150' 指定区间。与 offset 互斥，优先级高于 offset" }),
-      ),
-      index: Type.Optional(
-        Type.Number({ description: "entries: 查看第 N 条详情（0-based，含前后 3 条上下文）" }),
-      ),
-      toolName: Type.Optional(
-        Type.String({ description: "entries: 按工具名过滤（如 'edit'、'bash'），只返回包含该工具调用的条目" }),
-      ),
-    }),
+    parameters: sessionAnalyzeSchema,
 
-    async execute(_id: string, params: any, _signal: any, _onUpdate: any, _ctx: any): Promise<any> {
+    async execute(
+      _id: string,
+      params: SessionAnalyzeParams,
+      _signal: AbortSignal,
+      _onUpdate: undefined,
+      _ctx: undefined,
+    ): Promise<AgentToolResult> {
       try {
         const dir = getSessionDir();
         const resolved = await resolveSession(params.sessionId, dir);

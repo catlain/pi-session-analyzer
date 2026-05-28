@@ -5,7 +5,7 @@
 import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 import { type Entry, fmtTime } from "./core";
 import { extractText } from "./core";
-import { parseRange, indexDetail, filterByToolName, buildNavHint } from "./entries-nav";
+import { parseRange, indexDetail, filterByToolName, filterByFile, buildNavHint } from "./entries-nav";
 
 // ── compact 模式辅助 ──────────────────────────────────
 
@@ -43,6 +43,7 @@ export interface DoEntriesOptions {
 	range?: string;
 	index?: number;
 	toolName?: string;
+	file?: string;
 }
 
 // ── extractEntryText（从 analyze.ts 移出）──────────────
@@ -96,6 +97,7 @@ export function doEntries(
 	let rangeVal: string | undefined;
 	let indexVal: number | undefined;
 	let toolNameVal: string | undefined;
+	let fileVal: string | undefined;
 
 	if (typeof limitOrOpts === "object") {
 		limitVal = limitOrOpts.limit ?? 20;
@@ -105,6 +107,7 @@ export function doEntries(
 		rangeVal = limitOrOpts.range;
 		indexVal = limitOrOpts.index;
 		toolNameVal = limitOrOpts.toolName;
+		fileVal = limitOrOpts.file;
 	} else {
 		limitVal = limitOrOpts;
 		offsetVal = offset;
@@ -117,6 +120,11 @@ export function doEntries(
 	// ── toolName 过滤 ────────────────────────────
 	if (toolNameVal) {
 		items = filterByToolName(items, toolNameVal);
+	}
+
+	// ── file 过滤 ───────────────────────────────
+	if (fileVal) {
+		items = filterByFile(items, fileVal);
 	}
 
 	// ── grep 过滤（支持正则；无效正则 fallback 子串匹配）
@@ -218,12 +226,13 @@ export function doEntries(
 	}
 	const filterDesc = grepVal ? `（过滤: "${grepVal}"）` : "";
 	const toolDesc = toolNameVal ? `（工具: "${toolNameVal}"）` : "";
+	const fileDesc = fileVal ? `（文件: "${fileVal}"）` : "";
 
 	// 导航提示
 	const navHint = buildNavHint(entries.length, start, items.length, rangeVal, offsetVal, grepVal, toolNameVal, indexVal);
 
 	return truncatedResult(
-		`条目列表 ${rangeDesc}${filterDesc}${toolDesc}：\n${lines.join("\n")}${navHint}`,
+		`条目列表 ${rangeDesc}${filterDesc}${toolDesc}${fileDesc}：\n${lines.join("\n")}${navHint}`,
 		{ toolName: "session_analyze", label: "entries", maxLines: ANALYZE_MAX_LINES, maxBytes: ANALYZE_MAX_BYTES },
 	);
 }

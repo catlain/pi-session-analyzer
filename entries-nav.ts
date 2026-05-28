@@ -2,6 +2,7 @@
  * entries 导航辅助函数 — parseRange / index 详情 / toolName 过滤
  */
 
+import { matchToolName, extractStringValues, matchFile } from "@pi-atelier/shared-utils";
 import { fmtTime } from "./core";
 import type { Entry } from "./core";
 
@@ -29,19 +30,19 @@ export function parseRange(range: string, total: number): { start: number; end: 
 
 const INDEX_DETAIL_MAX = 5000;
 
-/** 判断条目是否与指定 toolName 相关 */
+/** 判断条目是否匹配指定 toolName（支持通配符/多值） */
 function hasToolName(entry: Entry, toolName: string): boolean {
 	if (!entry.message) return false;
 
 	// assistant 消息含 toolCalls
 	if (entry.message.role === "assistant" && Array.isArray(entry.message.content)) {
 		for (const part of entry.message.content) {
-			if (part.type === "toolCall" && part.name === toolName) return true;
+			if (part.type === "toolCall" && matchToolName(toolName, part.name)) return true;
 		}
 	}
 
 	// toolResult 消息的 message.toolName
-	if (entry.message.toolName === toolName) return true;
+	if (matchToolName(toolName, entry.message.toolName ?? "")) return true;
 
 	return false;
 }
@@ -49,6 +50,27 @@ function hasToolName(entry: Entry, toolName: string): boolean {
 /** 按工具名过滤条目 */
 export function filterByToolName(entries: Entry[], toolName: string): Entry[] {
 	return entries.filter((e) => hasToolName(e, toolName));
+}
+
+/** 从条目的工具调用参数中提取所有字符串值（用于 file 过滤） */
+function extractFilePaths(entry: Entry): string[] {
+	if (!entry.message) return [];
+	const paths: string[] = [];
+
+	if (entry.message.role === "assistant" && Array.isArray(entry.message.content)) {
+		for (const part of entry.message.content) {
+			if (part.type === "toolCall" && part.arguments) {
+				paths.push(...extractStringValues(part.arguments));
+			}
+		}
+	}
+
+	return paths;
+}
+
+/** 按文件路径过滤条目 */
+export function filterByFile(entries: Entry[], file: string): Entry[] {
+	return entries.filter((e) => matchFile(file, extractFilePaths(e)));
 }
 
 /** 获取条目完整文本（不截断） */

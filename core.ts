@@ -251,9 +251,11 @@ export async function getSessionFiles(sessionDir?: string): Promise<string[]> {
     }
   }
 
-  // 2. 可见模式子代理 /tmp/pi-visible-*/session.jsonl
-  const visibleFiles = await getVisibleSubagentFiles();
-  results.push(...visibleFiles);
+  // 2. 可见模式子代理 /tmp/pi-visible-*/session.jsonl（仅默认目录时扫描）
+  if (!sessionDir) {
+    const visibleFiles = await getVisibleSubagentFiles();
+    results.push(...visibleFiles);
+  }
 
   const withMtime = await Promise.all(
     results.map(async (p) => {
