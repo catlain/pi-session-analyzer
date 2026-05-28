@@ -105,12 +105,26 @@ export function doEntries(
 	let items = entries;
 
 	// 关键词过滤（先过滤再切片，减少输出量）
+	// 支持正则表达式（如 'error|fail'）；无效正则 fallback 到子串匹配
 	if (grepVal) {
-		const keyword = grepVal.toLowerCase();
-		items = items.filter((entry) => {
-			const text = extractEntryText(entry);
-			return text.toLowerCase().includes(keyword);
-		});
+		let regex: RegExp | undefined;
+		try {
+			regex = new RegExp(grepVal, "i");
+		} catch {
+			// 无效正则（如单独的 '('），fallback 到大小写不敏感子串匹配
+		}
+		if (regex) {
+			items = items.filter((entry) => {
+				const text = extractEntryText(entry);
+				return regex!.test(text);
+			});
+		} else {
+			const keyword = grepVal.toLowerCase();
+			items = items.filter((entry) => {
+				const text = extractEntryText(entry);
+				return text.toLowerCase().includes(keyword);
+			});
+		}
 	}
 
 	// 偏移 + 限制
