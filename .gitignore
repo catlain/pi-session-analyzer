@@ -3,3 +3,4 @@ dist/
 *.tgz
 package-lock.json
 .code-graph/
+coverage/
