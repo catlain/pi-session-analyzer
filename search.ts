@@ -83,7 +83,8 @@ export async function doGrep(
   const allMatches: Array<{
     sessionId: string;
     firstMsg: string;
-    matches: Array<{ lineno: number; role: string; text: string }>;
+    matches: Array<{ entryIdx: number; role: string; text: string; truncated: number }>;
+    truncatedCount: number;
   }> = [];
 
   for (const fp of files) {
@@ -94,7 +95,7 @@ export async function doGrep(
 
     const lines = rawText.split("\n");
     const sessionEntries: Entry[] = [];
-    const matches: Array<{ lineno: number; role: string; text: string }> = [];
+    const matches: Array<{ entryIdx: number; role: string; text: string; truncated: number }> = [];
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
@@ -106,6 +107,9 @@ export async function doGrep(
         continue;
       }
       sessionEntries.push(entry);
+
+      // entryIdx 与 session_analyze entries index=N 对齐（所有类型，0-based）
+      const entryIdx = sessionEntries.length - 1;
 
       if (editOnly) {
         if (entry.type !== "message" || !entry.message) continue;
@@ -123,20 +127,28 @@ export async function doGrep(
 
       const matchedText = extractMatchContext(entry, regex);
       if (matchedText) {
+        // 每个匹配点独立截断，避免多匹配 entry 后面的匹配点丢失
+        const textSlice = matchedText
+          .split("\n")
+          .map((p) => p.slice(0, 200))
+          .join("\n");
         matches.push({
-          lineno: i + 1,
+          entryIdx,
           role: entry.message?.role ?? "?",
-          text: matchedText,
+          text: textSlice,
         });
       }
     }
 
     if (matches.length > 0) {
+      const MAX_MATCHES_PER_SESSION = 10;
+      const truncated = matches.length > MAX_MATCHES_PER_SESSION;
       const summary = extractSummary(sessionEntries);
       allMatches.push({
         sessionId: parseSessionId(fp),
         firstMsg: summary.firstMsg.slice(0, 40),
-        matches: matches.slice(0, 5),
+        matches: matches.slice(0, MAX_MATCHES_PER_SESSION),
+        truncatedCount: truncated ? matches.length - MAX_MATCHES_PER_SESSION : 0,
       });
     }
   }
@@ -152,8 +164,11 @@ export async function doGrep(
       (s) =>
         `── ${s.sessionId.slice(0, 12)}  ${s.firstMsg}\n` +
         s.matches
-          .map((m) => `  [${m.lineno}] ${m.role} | ${m.text.slice(0, 80)}`)
-          .join("\n"),
+          .map((m) => `  [entry#${m.entryIdx}] ${m.role} | ${m.text}`)
+          .join("\n") +
+        (s.truncatedCount > 0
+          ? `\n  ...还有 ${s.truncatedCount} 条匹配，用 session_analyze entries grep=${query} 查看更多`
+          : ""),
     )
     .join("\n\n");
 
