@@ -5,7 +5,7 @@
 import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 import { type Entry, fmtTime } from "./core";
 import { extractText } from "./core";
-import { parseRange, indexDetail, filterByToolName } from "./entries-nav";
+import { parseRange, indexDetail, filterByToolName, buildNavHint } from "./entries-nav";
 
 // ── compact 模式辅助 ──────────────────────────────────
 
@@ -206,27 +206,24 @@ export function doEntries(
 		return `${String(globalIdx).padStart(4)} | ${entry.type.padEnd(8)} | ${role.padEnd(12)} | ${timeFull} | ${text}`;
 	});
 
-	// ── rangeDesc ───────────────────────────────
+	// ── rangeDesc + 导航提示 ───────────────────
 	let rangeDesc: string;
-	let tailHint = "";
 
 	if (rangeVal) {
 		rangeDesc = `条目 ${start}-${start + items.length - 1}/${totalCount}`;
 	} else if (offsetVal != null) {
 		rangeDesc = `条目 ${start}-${start + items.length - 1}/${totalCount}`;
 	} else {
-		// 无参默认：显示前 N 条
 		rangeDesc = `前 ${items.length}/${entries.length} 条`;
-		if (start + limitVal < entries.length) {
-			const remaining = entries.length - start - limitVal;
-			tailHint = `\n\n共 ${entries.length} 条，用 range='last:${remaining}' 查看末尾`;
-		}
 	}
 	const filterDesc = grepVal ? `（过滤: "${grepVal}"）` : "";
 	const toolDesc = toolNameVal ? `（工具: "${toolNameVal}"）` : "";
 
+	// 导航提示
+	const navHint = buildNavHint(entries.length, start, items.length, rangeVal, offsetVal, grepVal, toolNameVal, indexVal);
+
 	return truncatedResult(
-		`条目列表 ${rangeDesc}${filterDesc}${toolDesc}：\n${lines.join("\n")}${tailHint}`,
+		`条目列表 ${rangeDesc}${filterDesc}${toolDesc}：\n${lines.join("\n")}${navHint}`,
 		{ toolName: "session_analyze", label: "entries", maxLines: ANALYZE_MAX_LINES, maxBytes: ANALYZE_MAX_BYTES },
 	);
 }

@@ -72,7 +72,44 @@ function fullText(entry: Entry): string {
 	return "";
 }
 
-/** 生成 index 详情输出 */
+/** 生成条目列表末尾的导航提示 */
+export function buildNavHint(
+	total: number,
+	start: number,
+	shown: number,
+	rangeVal?: string,
+	offsetVal?: number,
+	grepVal?: string,
+	toolNameVal?: string,
+	indexVal?: number,
+): string {
+	if (total === 0) return "";
+
+	const tips: string[] = [];
+	const end = start + shown - 1;
+	const isHead = start === 0;
+	const isTail = end >= total - 1;
+
+	// 当前位置不是尾部 → 提示查看末尾
+	if (!isTail) {
+		tips.push(`range="last:50"  查看末尾`);
+	}
+
+	// 当前位置不是头部 → 提示查看头部
+	if (!isHead) {
+		tips.push(`无参或 offset=0  查看开头`);
+	}
+
+	// range 区间提示
+	tips.push(`range="${start}-${Math.min(end + 50, total - 1)}"  继续往后`);
+
+	// 其他功能提示
+	tips.push(`index=N  查看第 N 条详情`);
+	if (!grepVal) tips.push(`grep="关键词"  按内容过滤`);
+	if (!toolNameVal) tips.push(`toolName="edit"  按工具名过滤`);
+
+	return `\n\n📊 共 ${total} 条。可用参数：\n  • ${tips.join("\n  • ")}`;
+}
 export function indexDetail(entries: Entry[], index: number, compact?: boolean): string {
 	if (index < 0 || index >= entries.length) {
 		return `❌ 索引 ${index} 超出范围（0-${entries.length - 1}）`;

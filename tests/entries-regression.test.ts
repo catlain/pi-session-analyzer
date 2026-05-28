@@ -67,7 +67,9 @@ describe("doEntries grep 正则支持", () => {
 		const text = getText(result);
 		expect(text).toContain("Hello");
 		expect(text).toContain("All done");
-		expect(text).not.toContain("edit");
+		// 导航提示含 toolName="edit"，所以只检查条目行不含 edit 工具调用
+		const entryLines = text.split("\n").filter((l: string) => l.match(/^\\s*\\d/));
+		expect(entryLines.every((l: string) => !l.includes("edit("))).toBe(true);
 	});
 
 	it("管道符 | 多个关键词，部分匹配", () => {
