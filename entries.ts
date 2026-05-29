@@ -42,6 +42,7 @@ export interface DoEntriesOptions {
 	compact?: boolean;
 	range?: string;
 	index?: number;
+	rawIndex?: number;
 	toolName?: string;
 	file?: string;
 }
@@ -149,7 +150,16 @@ export function doEntries(
 		}
 	}
 
-	// ── index 详情模式（互斥，直接返回） ────────
+	// ── rawIndex 模式：在原始（未过滤）列表中定位，展示前后上下文 ─
+	const rawIndexVal = (typeof limitOrOpts === "object" ? limitOrOpts.rawIndex : undefined);
+	if (rawIndexVal != null) {
+		return truncatedResult(
+			indexDetail(entries, rawIndexVal, compactVal),
+			{ toolName: "session_analyze", label: "entries", maxLines: ANALYZE_MAX_LINES, maxBytes: ANALYZE_MAX_BYTES },
+		);
+	}
+
+	// ── index 详情模式（在过滤后列表中定位，直接返回） ────────
 	if (indexVal != null) {
 		return truncatedResult(
 			indexDetail(items, indexVal, compactVal),
@@ -228,8 +238,8 @@ export function doEntries(
 	const toolDesc = toolNameVal ? `（工具: "${toolNameVal}"）` : "";
 	const fileDesc = fileVal ? `（文件: "${fileVal}"）` : "";
 
-	// 导航提示
-	const navHint = buildNavHint(entries.length, start, items.length, rangeVal, offsetVal, grepVal, toolNameVal, indexVal);
+	const hasFilter = !!(grepVal || toolNameVal || fileVal);
+	const navHint = buildNavHint(entries.length, start, items.length, rangeVal, offsetVal, grepVal, toolNameVal, indexVal, hasFilter);
 
 	return truncatedResult(
 		`条目列表 ${rangeDesc}${filterDesc}${toolDesc}${fileDesc}：\n${lines.join("\n")}${navHint}`,

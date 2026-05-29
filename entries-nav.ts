@@ -104,6 +104,7 @@ export function buildNavHint(
 	grepVal?: string,
 	toolNameVal?: string,
 	indexVal?: number,
+	hasGrepOrFilter?: boolean,
 ): string {
 	if (total === 0) return "";
 
@@ -127,6 +128,7 @@ export function buildNavHint(
 
 	// 其他功能提示
 	tips.push(`index=N  查看第 N 条详情`);
+	if (hasGrepOrFilter) tips.push(`rawIndex=N  用原始会话索引定位上下文（grep/toolName 过滤后跳回原始上下文）`);
 	if (!grepVal) tips.push(`grep="关键词"  按内容过滤`);
 	if (!toolNameVal) tips.push(`toolName="edit"  按工具名过滤`);
 
