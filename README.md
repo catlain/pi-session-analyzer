@@ -1,6 +1,10 @@
+> 📖 **[pi-atelier 实战指南](https://catlain.github.io/pi-atelier/)** — 从零教会你使用 pi-atelier 扩展生态，包含完整示例和最佳实践。
+
 [English](README.en.md) | 程序中文文档
 
 # pi-session-analyzer
+
+[源码仓库](https://github.com/catlain/pi-session-analyzer) | [npm](https://www.npmjs.com/package/pi-session-analyzer)
 
 Session search and analysis for [pi](https://github.com/earendil-works/pi-coding-agent) — search historical sessions, reconstruct timelines, audit behavior, and generate takeover reports.
 

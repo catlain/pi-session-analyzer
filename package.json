@@ -5,7 +5,7 @@
   "main": "index.ts",
   "description": "Session search and analysis extension for pi-coding-agent",
   "dependencies": {
-    "@pi-atelier/shared-utils": "github:catlain/pi-shared-utils"
+    "@pi-atelier/shared-utils": "^1.0.1"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": ">=0.74.0"
@@ -34,5 +34,20 @@
     "tsconfig.json",
     "vitest.config.ts",
     "package.json"
-  ]
+  ],
+  "bundleDependencies": [
+    "@pi-atelier/shared-utils"
+  ],
+  "keywords": [
+    "pi-package"
+  ],
+  "homepage": "https://catlain.github.io/pi-atelier/",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com:catlain/pi-session-analyzer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/catlain/pi-session-analyzer/issues"
+  },
+  "license": "MIT"
 }

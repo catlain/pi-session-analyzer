@@ -39,14 +39,13 @@ describe("getVisibleSubagentFiles", () => {
 		mockTmpdir.mockReturnValue("/tmp");
 		mockReaddir.mockResolvedValue(["pi-visible-a1b2", "other-dir", "pi-visible-c3d4"]);
 		mockStat.mockImplementation(async (p: string) => {
-			expect(p).toMatch(/\/tmp\/pi-visible-.*\/session\.jsonl$/);
+			expect(p).toMatch(/[\\/]tmp[\\/]pi-visible-[^\\/]+[\\/]session\.jsonl$/);
 			return { isFile: () => true };
 		});
 		const result = await getVisibleSubagentFiles();
-		expect(result).toEqual([
-			"/tmp/pi-visible-a1b2/session.jsonl",
-			"/tmp/pi-visible-c3d4/session.jsonl",
-		]);
+		expect(result).toHaveLength(2);
+		expect(result[0]).toMatch(/[\\/]tmp[\\/]pi-visible-a1b2[\\/]session\.jsonl$/);
+		expect(result[1]).toMatch(/[\\/]tmp[\\/]pi-visible-c3d4[\\/]session\.jsonl$/);
 	});
 
 	it("跳过 stat 失败或无 session.jsonl 的目录", async () => {
@@ -59,7 +58,8 @@ describe("getVisibleSubagentFiles", () => {
 			throw new Error("ENOENT"); // pi-visible-no-file and pi-visible-bad: fail
 		});
 		const result = await getVisibleSubagentFiles();
-		expect(result).toEqual(["/tmp/pi-visible-ok/session.jsonl"]);
+		expect(result).toHaveLength(1);
+		expect(result[0]).toMatch(/[\\/]tmp[\\/]pi-visible-ok[\\/]session\.jsonl$/);
 	});
 });
 

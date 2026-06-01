@@ -34,7 +34,8 @@ describe("doAudit — 规则加载", () => {
 
 	it("全局 AGENTS.md 存在时规则头显示 [global]", async () => {
 		(readFile as any).mockImplementation((path: string) => {
-			if (path.includes("AGENTS.md") && path.includes(".pi/agent")) {
+			const normalized = path.replace(/\\/g, "/");
+			if (normalized.includes("AGENTS.md") && normalized.includes(".pi/agent")) {
 				return Promise.resolve("test: always use edit");
 			}
 			return Promise.reject(new Error("not found"));
@@ -48,7 +49,8 @@ describe("doAudit — 规则加载", () => {
 
 	it("有全局规则时规则头不显示覆盖建议", async () => {
 		(readFile as any).mockImplementation((path: string) => {
-			if (path.includes("AGENTS.md") && path.includes(".pi/agent")) {
+			const normalized = path.replace(/\\/g, "/");
+			if (normalized.includes("AGENTS.md") && normalized.includes(".pi/agent")) {
 				return Promise.resolve("test: always use edit");
 			}
 			return Promise.reject(new Error("not found"));
@@ -73,10 +75,11 @@ describe("doAudit — 规则加载", () => {
 
 	it("sessionCwd 时加载项目 CLAUDE.md", async () => {
 		(readFile as any).mockImplementation((path: string) => {
-			if (path.includes("AGENTS.md") && path.includes(".pi/agent")) {
+			const normalized = path.replace(/\\/g, "/");
+			if (normalized.includes("AGENTS.md") && normalized.includes(".pi/agent")) {
 				return Promise.resolve("global rules");
 			}
-			if (path.includes("CLAUDE.md")) {
+			if (normalized.includes("CLAUDE.md")) {
 				return Promise.resolve("project specific rules");
 			}
 			return Promise.reject(new Error("not found"));
@@ -90,7 +93,8 @@ describe("doAudit — 规则加载", () => {
 
 	it("sessionCwd 无项目规则时只显示全局", async () => {
 		(readFile as any).mockImplementation((path: string) => {
-			if (path.includes("AGENTS.md") && path.includes(".pi/agent")) {
+			const normalized = path.replace(/\\/g, "/");
+			if (normalized.includes("AGENTS.md") && normalized.includes(".pi/agent")) {
 				return Promise.resolve("global rules");
 			}
 			return Promise.reject(new Error("not found"));
@@ -103,10 +107,11 @@ describe("doAudit — 规则加载", () => {
 
 	it("项目 CLAUDE.md 和项目 AGENTS.md 都加载", async () => {
 		(readFile as any).mockImplementation((path: string) => {
-			if (path.includes("AGENTS.md")) {
+			const normalized = path.replace(/\\/g, "/");
+			if (normalized.includes("AGENTS.md")) {
 				return Promise.resolve("agent rules");
 			}
-			if (path.includes("CLAUDE.md")) {
+			if (normalized.includes("CLAUDE.md")) {
 				return Promise.resolve("claude rules");
 			}
 			return Promise.reject(new Error("not found"));

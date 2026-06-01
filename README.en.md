@@ -2,6 +2,8 @@
 
 # pi-session-analyzer
 
+[Source Code](https://github.com/catlain/pi-session-analyzer) | [npm](https://www.npmjs.com/package/pi-session-analyzer)
+
 Session search and analysis for [pi](https://github.com/earendil-works/pi-coding-agent) — search historical sessions, reconstruct timelines, audit behavior, and generate takeover reports.
 
 ## Why You Need It

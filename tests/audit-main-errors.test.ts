@@ -49,7 +49,8 @@ function withSearch(...toolNames: string[]): Entry[] {
 
 function mockGlobalRulesExist() {
 	(readFile as any).mockImplementation((path: string) => {
-		if (path.includes("AGENTS.md") && path.includes(".pi/agent")) {
+		const normalized = path.replace(/\\/g, "/");
+		if (normalized.includes("AGENTS.md") && normalized.includes(".pi/agent")) {
 			return Promise.resolve("some global rules");
 		}
 		return Promise.reject(new Error("not found"));

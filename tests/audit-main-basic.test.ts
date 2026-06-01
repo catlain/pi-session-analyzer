@@ -26,7 +26,8 @@ describe("doAudit — 基础", () => {
 
 	it("空条目返回未发现违规（有全局规则时）", async () => {
 		(readFile as any).mockImplementation((path: string) => {
-			if (path.includes("AGENTS.md") && path.includes(".pi/agent")) {
+			const normalized = path.replace(/\\/g, "/");
+			if (normalized.includes("AGENTS.md") && normalized.includes(".pi/agent")) {
 				return Promise.resolve("some global rules");
 			}
 			return Promise.reject(new Error("not found"));
@@ -37,7 +38,8 @@ describe("doAudit — 基础", () => {
 
 	it("无违规条目返回未发现违规", async () => {
 		(readFile as any).mockImplementation((path: string) => {
-			if (path.includes("AGENTS.md") && path.includes(".pi/agent")) {
+			const normalized = path.replace(/\\/g, "/");
+			if (normalized.includes("AGENTS.md") && normalized.includes(".pi/agent")) {
 				return Promise.resolve("some global rules");
 			}
 			return Promise.reject(new Error("not found"));
