@@ -1,6 +1,6 @@
 {
   "name": "pi-session-analyzer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "commonjs",
   "main": "index.ts",
   "description": "Session search and analysis extension for pi-coding-agent",
@@ -34,9 +34,6 @@
     "tsconfig.json",
     "vitest.config.ts",
     "package.json"
-  ],
-  "bundleDependencies": [
-    "@pi-atelier/shared-utils"
   ],
   "keywords": [
     "pi-package"
