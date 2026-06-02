@@ -83,6 +83,12 @@ session_search(action: "grep", query: "error", editOnly: true)
 | `limit` | number | ❌ | `20` | Max entries |
 | `offset` | number | ❌ | — | Start position (0-based, entries mode) |
 | `grep` | string | ❌ | — | Keyword filter (entries mode, supports regex) |
+| `compact` | boolean | ❌ | `false` | Compact output (entries mode) |
+| `range` | string | ❌ | — | Entry range, e.g. `'5-10'` or `'last:5'` (entries mode) |
+| `index` | number | ❌ | — | Show Nth entry with context (entries mode) |
+| `rawIndex` | number | ❌ | — | Jump to raw index after filtering (entries mode) |
+| `toolName` | string | ❌ | — | Filter by tool name, supports `*` wildcard and `|` for multi-value (entries mode) |
+| `file` | string | ❌ | — | Filter by file path, supports `*` wildcard and `|` for multi-value (entries mode) |
 
 **Action reference:**
 
@@ -104,6 +110,9 @@ session_search(action: "grep", query: "error", editOnly: true)
 session_analyze(sessionId: "abc123", action: "summary")
 session_analyze(sessionId: "abc123", action: "entries", grep: "error|fail")
 session_analyze(sessionId: "abc123", action: "takeover")
+session_analyze(sessionId: "abc", action: "entries", range: "last:5")
+session_analyze(sessionId: "abc", action: "entries", toolName: "edit|write")
+session_analyze(sessionId: "abc", action: "entries", file: "*.test.ts")
 session_analyze(sessionId: "abc", action: "entries", offset: 0, limit: 10)  # pagination
 ```
 
