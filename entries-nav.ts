@@ -132,7 +132,7 @@ export function buildNavHint(
 	if (!grepVal) tips.push(`grep="关键词"  按内容过滤`);
 	if (!toolNameVal) tips.push(`toolName="edit"  按工具名过滤`);
 
-	return `\n\n📊 共 ${total} 条。可用参数：\n  • ${tips.join("\n  • ")}`;
+	return `\n\n📊 共 ${total} 条。继续查看请调用 session_analyze(sessionId, "entries", ...)：\n  • ${tips.join("\n  • ")}`;
 }
 export function indexDetail(entries: Entry[], index: number, compact?: boolean): string {
 	if (index < 0 || index >= entries.length) {
@@ -175,10 +175,15 @@ export function indexDetail(entries: Entry[], index: number, compact?: boolean):
 			}
 			lines.push("└───");
 		} else {
-			// 上下文行 — 简要摘要
+			// 上下文行 — 格式与列表模式统一
 			const role = entry.message?.role ?? "";
+			const time = entry.timestamp ? fmtTime(entry.timestamp) : "";
 			const text = fullText(entry).slice(0, compact ? 60 : 100).replace(/\n/g, "\\n");
-			lines.push(`[${i}] ${compact ? role.slice(0, 7).padEnd(7) : role.padEnd(12)} ${text || "(empty)"}`);
+			if (compact) {
+				lines.push(`[${String(i).padStart(3)}] ${role.slice(0, 7).padEnd(7)} ${time.slice(11) || ""} ${text || "(empty)"}`);
+			} else {
+				lines.push(`${String(i).padStart(4)} | ${entry.type.padEnd(8)} | ${role.padEnd(12)} | ${time} | ${text || "(empty)"}`);
+			}
 		}
 	}
 

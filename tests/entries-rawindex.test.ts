@@ -41,7 +41,7 @@ describe("entries rawIndex 过滤后序号映射", () => {
 		const text = getText(result);
 		expect(text).toContain("edit");     // 目标条目内容
 		expect(text).toContain("[5]");      // 原始索引 5
-		expect(text).toContain("[4]");      // 上下文
+		expect(text).toContain("   4 | message");	// 上下文（列表格式）
 	});
 
 	it("rawIndex=1 + grep='edit' → 映射到第二个匹配的原始索引", () => {
@@ -82,8 +82,8 @@ describe("entries rawIndex 过滤后序号映射", () => {
 		const text = getText(result);
 		expect(text).toContain("[7]");
 		expect(text).toContain("edit");
-		expect(text).toContain("[6]"); // 前一条
-		expect(text).toContain("[8]"); // 后一条
+		expect(text).toContain("   6 | message"); // 前一条（列表格式）
+		expect(text).toContain("   8 | message"); // 后一条（列表格式）
 	});
 
 	it("grep 结果导航提示包含 rawIndex 提示", () => {

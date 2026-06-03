@@ -95,8 +95,9 @@ describe("entries index 详情", () => {
 		const text = getText(result);
 		expect(text).toContain("[1]");
 		expect(text).toContain("帮我分析");
-		expect(text).toContain("[0]");
-		expect(text).toContain("[2]");
+		// 上下文行使用列表格式："   0 | session |"
+		expect(text).toContain("   0 | session");
+		expect(text).toContain("   2 | message");
 	});
 
 	it("index=0 显示 session start", () => {
@@ -121,8 +122,9 @@ describe("entries index 详情", () => {
 		const result = doEntries(ENTRIES, { index: 10 });
 		const text = getText(result);
 		expect(text).toContain("git commit");
-		expect(text).toContain("[9]");
-		expect(text).not.toContain("[11]");
+		// 上下文行使用列表格式："   9 | message |"
+		expect(text).toContain("   9 | message");
+		expect(text).not.toContain("  11 | message");
 	});
 
 	it("详情模式显示完整内容", () => {
