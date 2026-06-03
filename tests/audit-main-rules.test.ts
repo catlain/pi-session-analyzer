@@ -2,7 +2,7 @@
  * session-analyzer audit 模块 — 抽象优先 + 信息获取规则触发测试
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Entry } from "../audit-types";
 
 vi.mock("node:fs/promises", () => ({
@@ -59,7 +59,13 @@ describe("doAudit — 抽象优先 + 信息获取", () => {
 	it("有匹配搜索工具时 edit/write >=3 不触发抽象优先违规", async () => {
 		// checkSearchBeforeEdit 只认 grep/find/search
 		const result = await doAudit([
-			{ type: "message", message: { role: "assistant", content: [{ type: "toolCall", name: "grep", arguments: {} }] } },
+			{
+				type: "message",
+				message: {
+					role: "assistant",
+					content: [{ type: "toolCall", name: "grep", arguments: {} }],
+				},
+			},
 			assistantWithToolCall("edit"),
 			assistantWithToolCall("edit"),
 			assistantWithToolCall("edit"),

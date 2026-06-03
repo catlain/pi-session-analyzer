@@ -4,15 +4,23 @@
  */
 
 export function truncatedResult(
-  text: string,
-  options?: { toolName?: string; label?: string; maxLines?: number; maxBytes?: number },
-  existingDetails?: Record<string, unknown>,
-): { content: Array<{ type: string; text: string }>; details: Record<string, unknown> } {
-  return {
-    content: [{ type: "text", text }],
-    details: {
-      ...(existingDetails ?? {}),
-      truncation: null,
-    },
-  };
+	text: string,
+	_options?: {
+		toolName?: string;
+		label?: string;
+		maxLines?: number;
+		maxBytes?: number;
+	},
+	existingDetails?: Record<string, unknown>,
+): {
+	content: Array<{ type: string; text: string }>;
+	details: Record<string, unknown>;
+} {
+	return {
+		content: [{ type: "text", text }],
+		details: {
+			...(existingDetails ?? {}),
+			truncation: null,
+		},
+	};
 }

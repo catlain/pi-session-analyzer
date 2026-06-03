@@ -1,9 +1,19 @@
-import { describe, it, expect } from "vitest";
-import { buildParentChildMap, buildEntryMap, findBranchPoints, assignBranch } from "../branches";
+import { describe, expect, it } from "vitest";
+import {
+	assignBranch,
+	buildEntryMap,
+	buildParentChildMap,
+	findBranchPoints,
+} from "../branches";
 import type { Entry } from "../core";
 
 // helper：构造带 id/parentId 的 entry
-function entry(id: string, parentId?: string, role?: string, content?: string): Entry {
+function entry(
+	id: string,
+	parentId?: string,
+	role?: string,
+	content?: string,
+): Entry {
 	const e: Entry = { type: "message", id };
 	if (parentId) e.parentId = parentId;
 	if (role || content) {
@@ -17,7 +27,12 @@ function entry(id: string, parentId?: string, role?: string, content?: string): 
 
 describe("buildParentChildMap", () => {
 	it("正确映射 parent→children", () => {
-		const entries = [entry("a"), entry("b", "a"), entry("c", "a"), entry("d", "b")];
+		const entries = [
+			entry("a"),
+			entry("b", "a"),
+			entry("c", "a"),
+			entry("d", "b"),
+		];
 		const map = buildParentChildMap(entries);
 		expect(map.get("a")).toEqual(["b", "c"]);
 		expect(map.get("b")).toEqual(["d"]);
@@ -44,7 +59,11 @@ describe("buildEntryMap", () => {
 describe("findBranchPoints", () => {
 	it("无分支时返回空", () => {
 		// 线性链：a→b→c
-		const entries = [entry("a"), entry("b", "a", "assistant"), entry("c", "b", "user")];
+		const entries = [
+			entry("a"),
+			entry("b", "a", "assistant"),
+			entry("c", "b", "user"),
+		];
 		expect(findBranchPoints(entries)).toHaveLength(0);
 	});
 

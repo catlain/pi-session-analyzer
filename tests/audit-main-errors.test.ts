@@ -2,7 +2,7 @@
  * session-analyzer audit 模块 — 重复错误/文件行数/比例/多规则/格式测试
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Entry } from "../audit-types";
 
 vi.mock("node:fs/promises", () => ({
@@ -39,7 +39,13 @@ function errorResult(toolName: string, content: string): Entry {
 /** 带搜索的辅助函数：先搜索再执行工具，避免触发 抽象优先原则 */
 function withSearch(...toolNames: string[]): Entry[] {
 	const entries: Entry[] = [
-		{ type: "message", message: { role: "assistant", content: [{ type: "toolCall", name: "grep", arguments: {} }] } },
+		{
+			type: "message",
+			message: {
+				role: "assistant",
+				content: [{ type: "toolCall", name: "grep", arguments: {} }],
+			},
+		},
 	];
 	for (const name of toolNames) {
 		entries.push(assistantWithToolCall(name));
@@ -94,17 +100,13 @@ describe("doAudit — 错误/行数/比例/格式", () => {
 
 	it("文件超过 500 行触发文件格式规则", async () => {
 		mockNoRules();
-		const result = await doAudit([
-			bashToolResult(" 1234 /path/to/main.ts"),
-		]);
+		const result = await doAudit([bashToolResult(" 1234 /path/to/main.ts")]);
 		expect(result.content[0].text).toContain("文件格式规则");
 	});
 
 	it("文件行数在 500 以下忽略", async () => {
 		mockGlobalRulesExist();
-		const result = await doAudit([
-			bashToolResult("  123 /path/to/main.ts"),
-		]);
+		const result = await doAudit([bashToolResult("  123 /path/to/main.ts")]);
 		expect(result.content[0].text).toContain("未发现违规问题");
 	});
 
@@ -113,7 +115,15 @@ describe("doAudit — 错误/行数/比例/格式", () => {
 	it("write(7) vs edit(0) 远多于 edit 触发比例违规", async () => {
 		mockNoRules();
 		const result = await doAudit([
-			...withSearch("write", "write", "write", "write", "write", "write", "write"),
+			...withSearch(
+				"write",
+				"write",
+				"write",
+				"write",
+				"write",
+				"write",
+				"write",
+			),
 		]);
 		expect(result.content[0].text).toContain("文件修改规则");
 		expect(result.content[0].text).toContain("write(7) 远多于 edit(0)");
@@ -130,7 +140,18 @@ describe("doAudit — 错误/行数/比例/格式", () => {
 	it("write(6) vs edit(4) 比例正常时不触发", async () => {
 		mockGlobalRulesExist();
 		const result = await doAudit([
-			...withSearch("write", "write", "write", "write", "write", "write", "edit", "edit", "edit", "edit"),
+			...withSearch(
+				"write",
+				"write",
+				"write",
+				"write",
+				"write",
+				"write",
+				"edit",
+				"edit",
+				"edit",
+				"edit",
+			),
 		]);
 		expect(result.content[0].text).toContain("未发现违规问题");
 	});
@@ -170,9 +191,7 @@ describe("doAudit — 错误/行数/比例/格式", () => {
 
 	it("违规显示证据和修复建议", async () => {
 		mockNoRules();
-		const result = await doAudit([
-			bashToolResult("sed -i 's/a/b/g' file.txt"),
-		]);
+		const result = await doAudit([bashToolResult("sed -i 's/a/b/g' file.txt")]);
 		const text = result.content[0].text;
 		expect(text).toContain("证据:");
 		expect(text).toContain("sed -i");

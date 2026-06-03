@@ -19,7 +19,10 @@ export function makeUser(text: string, idx = 0): Entry {
 }
 
 /** 创建 assistant 消息 entry（纯文本 parts） */
-export function makeAssistant(parts: Array<{ type: string; text?: string; name?: string }>, idx = 0): Entry {
+export function makeAssistant(
+	parts: Array<{ type: string; text?: string; name?: string }>,
+	idx = 0,
+): Entry {
 	return {
 		type: "message",
 		id: `a-${idx}`,
@@ -38,7 +41,11 @@ export function makeAssistantWithTs(text: string, ts: string, idx = 0): Entry {
 }
 
 /** 创建 toolCall entry */
-export function makeToolCall(name: string, args: Record<string, unknown>, idx = 0): Entry {
+export function makeToolCall(
+	name: string,
+	args: Record<string, unknown>,
+	idx = 0,
+): Entry {
 	return {
 		type: "message",
 		id: `t-${idx}`,

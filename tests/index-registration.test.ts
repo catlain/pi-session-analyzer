@@ -2,7 +2,7 @@
  * session-analyzer 扩展入口 — 注册与 session_search 工具测试
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("typebox", () => ({
 	Type: {
@@ -30,10 +30,9 @@ vi.mock("../audit", () => ({ doAudit: vi.fn() }));
 vi.mock("../takeover", () => ({ doTakeover: vi.fn() }));
 vi.mock("../audit-types", () => ({}));
 
-import { getSessionDir } from "../core";
-import { doList, doGrep } from "../search";
-import { doFile } from "../search-file";
 import ext from "../index";
+import { doGrep, doList } from "../search";
+import { doFile } from "../search-file";
 
 describe("index.ts — 工具注册与 session_search", () => {
 	let registerTool: any;
@@ -65,12 +64,24 @@ describe("index.ts — 工具注册与 session_search", () => {
 	});
 
 	it("session_search list 传递自定义 limit", async () => {
-		await searchExecute("id", { action: "list", limit: 5 }, null, undefined, undefined);
+		await searchExecute(
+			"id",
+			{ action: "list", limit: 5 },
+			null,
+			undefined,
+			undefined,
+		);
 		expect(doList).toHaveBeenCalledWith("/mock/sessions", 5);
 	});
 
 	it("session_search grep action 调用 doGrep", async () => {
-		await searchExecute("id", { action: "grep", query: "error", editOnly: true }, null, undefined, undefined);
+		await searchExecute(
+			"id",
+			{ action: "grep", query: "error", editOnly: true },
+			null,
+			undefined,
+			undefined,
+		);
 		expect(doGrep).toHaveBeenCalledWith("/mock/sessions", "error", 20, true);
 	});
 
@@ -80,18 +91,36 @@ describe("index.ts — 工具注册与 session_search", () => {
 	});
 
 	it("session_search file action 调用 doFile", async () => {
-		await searchExecute("id", { action: "file", query: "main.ts" }, null, undefined, undefined);
+		await searchExecute(
+			"id",
+			{ action: "file", query: "main.ts" },
+			null,
+			undefined,
+			undefined,
+		);
 		expect(doFile).toHaveBeenCalledWith("/mock/sessions", "main.ts", 20);
 	});
 
 	it("session_search 未知 action 返回错误", async () => {
-		const res = await searchExecute("id", { action: "unknown" }, null, undefined, undefined);
+		const res = await searchExecute(
+			"id",
+			{ action: "unknown" },
+			null,
+			undefined,
+			undefined,
+		);
 		expect(res.content[0].text).toContain("未知 action");
 	});
 
 	it("session_search 异常时返回错误信息", async () => {
 		(doList as any).mockRejectedValue(new Error("磁盘错误"));
-		const res = await searchExecute("id", { action: "list" }, null, undefined, undefined);
+		const res = await searchExecute(
+			"id",
+			{ action: "list" },
+			null,
+			undefined,
+			undefined,
+		);
 		expect(res.content[0].text).toContain("磁盘错误");
 	});
 });

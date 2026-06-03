@@ -2,7 +2,7 @@
  * session-analyzer audit 模块 — doAudit 基础测试（空/无违规/文件写入）
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Entry } from "../audit-types";
 
 vi.mock("node:fs/promises", () => ({
@@ -27,7 +27,10 @@ describe("doAudit — 基础", () => {
 	it("空条目返回未发现违规（有全局规则时）", async () => {
 		(readFile as any).mockImplementation((path: string) => {
 			const normalized = path.replace(/\\/g, "/");
-			if (normalized.includes("AGENTS.md") && normalized.includes(".pi/agent")) {
+			if (
+				normalized.includes("AGENTS.md") &&
+				normalized.includes(".pi/agent")
+			) {
 				return Promise.resolve("some global rules");
 			}
 			return Promise.reject(new Error("not found"));
@@ -39,7 +42,10 @@ describe("doAudit — 基础", () => {
 	it("无违规条目返回未发现违规", async () => {
 		(readFile as any).mockImplementation((path: string) => {
 			const normalized = path.replace(/\\/g, "/");
-			if (normalized.includes("AGENTS.md") && normalized.includes(".pi/agent")) {
+			if (
+				normalized.includes("AGENTS.md") &&
+				normalized.includes(".pi/agent")
+			) {
 				return Promise.resolve("some global rules");
 			}
 			return Promise.reject(new Error("not found"));
@@ -52,9 +58,7 @@ describe("doAudit — 基础", () => {
 
 	it("检测到 cat > 写入违规", async () => {
 		(readFile as any).mockRejectedValue(new Error("not found"));
-		const result = await doAudit([
-			bashToolResult("cat > /tmp/test.txt"),
-		]);
+		const result = await doAudit([bashToolResult("cat > /tmp/test.txt")]);
 		expect(result.content[0].text).toContain("文件修改规则");
 		expect(result.content[0].text).toContain("cat >");
 	});
@@ -71,9 +75,7 @@ describe("doAudit — 基础", () => {
 	it("检测到 echo >> 写入违规", async () => {
 		(readFile as any).mockRejectedValue(new Error("not found"));
 		// 正则 echo\s+>>，echo 后紧跟空格再 >>
-		const result = await doAudit([
-			bashToolResult("echo >>/tmp/test.txt"),
-		]);
+		const result = await doAudit([bashToolResult("echo >>/tmp/test.txt")]);
 		expect(result.content[0].text).toContain("文件修改规则");
 	});
 

@@ -5,10 +5,10 @@
  * 不展开详细 entry 内容，引导 AI 用 session_analyze 查看详情
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs";
-import * as path from "node:path";
 import * as os from "node:os";
+import * as path from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { doGrep } from "../search";
 
@@ -20,20 +20,50 @@ const SESSION_FILE = path.join(sessionSubDir, "20260512T100000_test001.jsonl");
 
 const SESSION_1_ENTRIES = [
 	{ type: "session", cwd: "/project" },
-	{ type: "message", message: { role: "user", content: [{ type: "text", text: "Edit main.ts" }] } },
-	{ type: "message", message: { role: "assistant", content: [
-		{ type: "toolCall", name: "edit", arguments: { path: "/project/src/main.ts" } },
-	] } },
-	{ type: "message", message: { role: "assistant", content: [{ type: "text", text: "Done editing main.ts" }] } },
+	{
+		type: "message",
+		message: {
+			role: "user",
+			content: [{ type: "text", text: "Edit main.ts" }],
+		},
+	},
+	{
+		type: "message",
+		message: {
+			role: "assistant",
+			content: [
+				{
+					type: "toolCall",
+					name: "edit",
+					arguments: { path: "/project/src/main.ts" },
+				},
+			],
+		},
+	},
+	{
+		type: "message",
+		message: {
+			role: "assistant",
+			content: [{ type: "text", text: "Done editing main.ts" }],
+		},
+	},
 ];
 
 function setupSessionFiles() {
 	fs.mkdirSync(sessionSubDir, { recursive: true });
-	fs.writeFileSync(SESSION_FILE, SESSION_1_ENTRIES.map((e) => JSON.stringify(e)).join("\n"), "utf-8");
+	fs.writeFileSync(
+		SESSION_FILE,
+		SESSION_1_ENTRIES.map((e) => JSON.stringify(e)).join("\n"),
+		"utf-8",
+	);
 }
 
 function cleanupSessionFiles() {
-	try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+	try {
+		fs.rmSync(tmpDir, { recursive: true, force: true });
+	} catch {
+		/* ignore */
+	}
 }
 
 // ── 会话级输出格式 ──────────────────────────────────────
@@ -78,10 +108,17 @@ describe("doGrep 输出容量（精简格式）", () => {
 			{ type: "session", cwd: "/test" },
 			...Array.from({ length: 15 }, (_, i) => ({
 				type: "message",
-				message: { role: "user", content: [{ type: "text", text: `keyword_match_${i}` }] },
+				message: {
+					role: "user",
+					content: [{ type: "text", text: `keyword_match_${i}` }],
+				},
 			})),
 		];
-		fs.writeFileSync(fp, entries.map((e) => JSON.stringify(e)).join("\n"), "utf-8");
+		fs.writeFileSync(
+			fp,
+			entries.map((e) => JSON.stringify(e)).join("\n"),
+			"utf-8",
+		);
 
 		try {
 			const result = await doGrep(manyMatchesDir, "keyword_match", 10, false);
@@ -105,7 +142,7 @@ describe("doGrep 输出容量（精简格式）", () => {
 		for (let i = 0; i < 50; i++) {
 			bigArgs[`field_${i}`] = `padding_${"_".repeat(80)}_${i}`;
 		}
-		bigArgs["deep_key"] = "INTEGRATION_TEST_MARKER";
+		bigArgs.deep_key = "INTEGRATION_TEST_MARKER";
 
 		const entries = [
 			{ type: "session", cwd: "/test" },
@@ -113,11 +150,17 @@ describe("doGrep 输出容量（精简格式）", () => {
 				type: "message",
 				message: {
 					role: "assistant",
-					content: [{ type: "toolCall", name: "roadmap_plan", arguments: bigArgs }],
+					content: [
+						{ type: "toolCall", name: "roadmap_plan", arguments: bigArgs },
+					],
 				},
 			},
 		];
-		fs.writeFileSync(fp, entries.map((e) => JSON.stringify(e)).join("\n"), "utf-8");
+		fs.writeFileSync(
+			fp,
+			entries.map((e) => JSON.stringify(e)).join("\n"),
+			"utf-8",
+		);
 
 		try {
 			const result = await doGrep(bigDir, "INTEGRATION_TEST_MARKER", 10, false);

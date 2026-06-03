@@ -2,21 +2,70 @@
  * entries 导航增强测试 — toolName 过滤 + 参数组合
  */
 
-import { describe, it, expect } from "vitest";
-import { doEntries } from "../entries";
+import { describe, expect, it } from "vitest";
 import type { Entry } from "../core";
+import { doEntries } from "../entries";
 
 const ENTRIES: Entry[] = [
 	{ type: "session", cwd: "/project", parentSession: "p1" } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:00.000Z", message: { role: "user", content: [{ type: "text", text: "帮我分析这个项目的架构" }], model: "gpt-4" } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:01.000Z", message: { role: "assistant", content: [{ type: "toolCall", name: "read", arguments: { path: "/src/main.ts" } }] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:02.000Z", message: { role: "toolResult", content: [{ type: "text", text: "file content here" }] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:04.000Z", message: { role: "assistant", content: [
-		{ type: "toolCall", name: "edit", arguments: { path: "/src/main.ts" } },
-		{ type: "toolCall", name: "bash", arguments: { cmd: "npm test" } },
-	] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:06.000Z", message: { role: "assistant", content: [{ type: "toolCall", name: "edit", arguments: { path: "/config.json" } }] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:09.000Z", message: { role: "assistant", content: [{ type: "toolCall", name: "bash", arguments: { cmd: "git commit" } }] } } as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:00.000Z",
+		message: {
+			role: "user",
+			content: [{ type: "text", text: "帮我分析这个项目的架构" }],
+			model: "gpt-4",
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:01.000Z",
+		message: {
+			role: "assistant",
+			content: [
+				{ type: "toolCall", name: "read", arguments: { path: "/src/main.ts" } },
+			],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:02.000Z",
+		message: {
+			role: "toolResult",
+			content: [{ type: "text", text: "file content here" }],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:04.000Z",
+		message: {
+			role: "assistant",
+			content: [
+				{ type: "toolCall", name: "edit", arguments: { path: "/src/main.ts" } },
+				{ type: "toolCall", name: "bash", arguments: { cmd: "npm test" } },
+			],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:06.000Z",
+		message: {
+			role: "assistant",
+			content: [
+				{ type: "toolCall", name: "edit", arguments: { path: "/config.json" } },
+			],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:09.000Z",
+		message: {
+			role: "assistant",
+			content: [
+				{ type: "toolCall", name: "bash", arguments: { cmd: "git commit" } },
+			],
+		},
+	} as Entry,
 ];
 
 function getText(result: ReturnType<typeof doEntries>): string {
@@ -58,9 +107,31 @@ describe("entries toolName 过滤", () => {
 
 	it("toolName 包含 toolResult 关联条目", () => {
 		const entries: Entry[] = [
-			{ type: "message", timestamp: "2026-05-12T02:00:00.000Z", message: { role: "assistant", content: [{ type: "toolCall", name: "read", arguments: {} }] } } as Entry,
-			{ type: "message", timestamp: "2026-05-12T02:00:01.000Z", message: { role: "toolResult", content: [{ type: "text", text: "result" }], toolName: "read" } } as Entry,
-			{ type: "message", timestamp: "2026-05-12T02:00:02.000Z", message: { role: "assistant", content: [{ type: "toolCall", name: "edit", arguments: {} }] } } as Entry,
+			{
+				type: "message",
+				timestamp: "2026-05-12T02:00:00.000Z",
+				message: {
+					role: "assistant",
+					content: [{ type: "toolCall", name: "read", arguments: {} }],
+				},
+			} as Entry,
+			{
+				type: "message",
+				timestamp: "2026-05-12T02:00:01.000Z",
+				message: {
+					role: "toolResult",
+					content: [{ type: "text", text: "result" }],
+					toolName: "read",
+				},
+			} as Entry,
+			{
+				type: "message",
+				timestamp: "2026-05-12T02:00:02.000Z",
+				message: {
+					role: "assistant",
+					content: [{ type: "toolCall", name: "edit", arguments: {} }],
+				},
+			} as Entry,
 		];
 		const result = doEntries(entries, { toolName: "read" });
 		const text = getText(result);

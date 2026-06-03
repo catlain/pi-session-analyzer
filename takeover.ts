@@ -5,25 +5,25 @@
  * 用户意图 / 修改文件 / 最近步骤 / 下一步推断 / 关键决策
  */
 
-import type { Entry, ContentPart } from "./core";
+import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
+import type { Entry } from "./core";
 import {
-	resolveSession,
-	readJsonlFile,
 	fmtTime,
 	getSessionInfoFromEntries,
+	readJsonlFile,
+	resolveSession,
 } from "./core";
-import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 import {
-	type TakeoverReport,
+	DECISION_PATTERNS,
+	formatReport,
+	getText,
+	hasToolCall,
 	MAX_INTENT_MSGS,
 	MAX_SUMMARY_LEN,
-	SCAN_TAIL_ASSISTANTS,
 	NEXT_STEP_PATTERNS,
-	DECISION_PATTERNS,
-	getText,
+	SCAN_TAIL_ASSISTANTS,
+	type TakeoverReport,
 	truncate,
-	hasToolCall,
-	formatReport,
 } from "./takeover-core";
 
 // ── 5 维提取函数 ────────────────────────────────────────
@@ -49,8 +49,11 @@ export function extractModifiedFiles(entries: Entry[]): string[] {
 		const content = entry.message.content;
 		if (!Array.isArray(content)) continue;
 		for (const part of content) {
-			if (part.type === "toolCall" && (part.name === "edit" || part.name === "write")) {
-				const path = String((part.arguments ?? {}).path ?? "");
+			if (
+				part.type === "toolCall" &&
+				(part.name === "edit" || part.name === "write")
+			) {
+				const path = String(part.arguments?.path ?? "");
 				if (path) files.add(path);
 			}
 		}
@@ -63,10 +66,10 @@ export function extractRecentSteps(entries: Entry[], n = 5) {
 	const assistants: Entry[] = [];
 	for (const entry of entries) {
 		if (
-			entry.type === "message"
-			&& entry.message?.role === "assistant"
-			&& Array.isArray(entry.message.content)
-			&& !hasToolCall(entry.message.content)
+			entry.type === "message" &&
+			entry.message?.role === "assistant" &&
+			Array.isArray(entry.message.content) &&
+			!hasToolCall(entry.message.content)
 		) {
 			assistants.push(entry);
 		}
@@ -129,10 +132,10 @@ export async function doTakeover(
 ): Promise<any> {
 	const resolved = await resolveSession(sessionId, undefined);
 	if (!resolved.ok) {
-		return truncatedResult(
-			`❌ 错误: ${resolved.error}`,
-			{ toolName: "session_analyze", label: "takeover" },
-		);
+		return truncatedResult(`❌ 错误: ${resolved.error}`, {
+			toolName: "session_analyze",
+			label: "takeover",
+		});
 	}
 
 	const entries = await readJsonlFile(resolved.filepath);
@@ -157,5 +160,8 @@ export async function doTakeover(
 	};
 
 	const lines = formatReport(report);
-	return truncatedResult(lines.join("\n"), { toolName: "session_analyze", label: "takeover" });
+	return truncatedResult(lines.join("\n"), {
+		toolName: "session_analyze",
+		label: "takeover",
+	});
 }

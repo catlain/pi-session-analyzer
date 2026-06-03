@@ -2,11 +2,14 @@
  * entries action — 条目列表输出（含 compact 紧凑模式）
  */
 
+import {
+	extractStringValues,
+	matchFile,
+	matchToolName,
+} from "@pi-atelier/shared-utils";
 import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
-import { matchToolName, extractStringValues, matchFile } from "@pi-atelier/shared-utils";
-import { type Entry, fmtTime } from "./core";
-import { extractText } from "./core";
-import { parseRange, indexDetail, buildNavHint } from "./entries-nav";
+import { type Entry, extractText, fmtTime } from "./core";
+import { buildNavHint, indexDetail, parseRange } from "./entries-nav";
 
 // ── compact 模式辅助 ──────────────────────────────────
 
@@ -25,7 +28,7 @@ function fmtTimeShort(tsStr: string): string {
 	if (!tsStr) return "";
 	try {
 		const d = new Date(tsStr);
-		if (isNaN(d.getTime())) return "";
+		if (Number.isNaN(d.getTime())) return "";
 		const bj = new Date(d.getTime() + 8 * 3600_000);
 		const pad = (n: number) => String(n).padStart(2, "0");
 		return `${pad(bj.getUTCHours())}:${pad(bj.getUTCMinutes())}`;
@@ -53,9 +56,13 @@ export interface DoEntriesOptions {
 /** 判断条目是否匹配指定 toolName */
 function hasToolNameEntry(entry: Entry, toolName: string): boolean {
 	if (!entry.message) return false;
-	if (entry.message.role === "assistant" && Array.isArray(entry.message.content)) {
+	if (
+		entry.message.role === "assistant" &&
+		Array.isArray(entry.message.content)
+	) {
 		for (const part of entry.message.content) {
-			if (part.type === "toolCall" && matchToolName(toolName, part.name)) return true;
+			if (part.type === "toolCall" && matchToolName(toolName, part.name))
+				return true;
 		}
 	}
 	if (matchToolName(toolName, entry.message.toolName ?? "")) return true;
@@ -66,7 +73,10 @@ function hasToolNameEntry(entry: Entry, toolName: string): boolean {
 function extractFilePaths(entry: Entry): string[] {
 	if (!entry.message) return [];
 	const paths: string[] = [];
-	if (entry.message.role === "assistant" && Array.isArray(entry.message.content)) {
+	if (
+		entry.message.role === "assistant" &&
+		Array.isArray(entry.message.content)
+	) {
 		for (const part of entry.message.content) {
 			if (part.type === "toolCall" && part.arguments) {
 				paths.push(...extractStringValues(part.arguments));
@@ -96,7 +106,12 @@ export function extractEntryText(entry: Entry): string {
 				if (part.type === "text" && part.text) parts.push(part.text);
 				if (part.type === "toolCall") {
 					parts.push(part.name ?? "");
-					if (part.arguments) parts.push(typeof part.arguments === "string" ? part.arguments : JSON.stringify(part.arguments));
+					if (part.arguments)
+						parts.push(
+							typeof part.arguments === "string"
+								? part.arguments
+								: JSON.stringify(part.arguments),
+						);
 				}
 			}
 			text = parts.join(" ");
@@ -116,8 +131,17 @@ export function extractEntryText(entry: Entry): string {
 const ANALYZE_MAX_LINES = 500;
 const ANALYZE_MAX_BYTES = 50_000;
 
-export function doEntries(entries: Entry[], limit: number, offset?: number, grep?: string, compact?: boolean): ReturnType<typeof truncatedResult>;
-export function doEntries(entries: Entry[], opts: DoEntriesOptions): ReturnType<typeof truncatedResult>;
+export function doEntries(
+	entries: Entry[],
+	limit: number,
+	offset?: number,
+	grep?: string,
+	compact?: boolean,
+): ReturnType<typeof truncatedResult>;
+export function doEntries(
+	entries: Entry[],
+	opts: DoEntriesOptions,
+): ReturnType<typeof truncatedResult>;
 export function doEntries(
 	entries: Entry[],
 	limitOrOpts: number | DoEntriesOptions,
@@ -201,27 +225,37 @@ export function doEntries(
 	}
 
 	// ── rawIndex 模式：用过滤后序号映射回原始 entries 的真实索引 ──
-	const rawIndexVal = (typeof limitOrOpts === "object" ? limitOrOpts.rawIndex : undefined);
+	const rawIndexVal =
+		typeof limitOrOpts === "object" ? limitOrOpts.rawIndex : undefined;
 	if (rawIndexVal != null) {
 		if (rawIndexVal < 0 || rawIndexVal >= origIndices.length) {
 			return truncatedResult(
 				`❌ rawIndex ${rawIndexVal} 超出过滤后范围（0-${origIndices.length - 1}，共 ${origIndices.length} 条匹配）`,
-				{ toolName: "session_analyze", label: "entries", maxLines: 100, maxBytes: 10_000 },
+				{
+					toolName: "session_analyze",
+					label: "entries",
+					maxLines: 100,
+					maxBytes: 10_000,
+				},
 			);
 		}
 		const realIdx = origIndices[rawIndexVal];
-		return truncatedResult(
-			indexDetail(entries, realIdx, compactVal),
-			{ toolName: "session_analyze", label: "entries", maxLines: ANALYZE_MAX_LINES, maxBytes: ANALYZE_MAX_BYTES },
-		);
+		return truncatedResult(indexDetail(entries, realIdx, compactVal), {
+			toolName: "session_analyze",
+			label: "entries",
+			maxLines: ANALYZE_MAX_LINES,
+			maxBytes: ANALYZE_MAX_BYTES,
+		});
 	}
 
 	// ── index 详情模式（在过滤后列表中定位，直接返回） ────────
 	if (indexVal != null) {
-		return truncatedResult(
-			indexDetail(items, indexVal, compactVal),
-			{ toolName: "session_analyze", label: "entries", maxLines: ANALYZE_MAX_LINES, maxBytes: ANALYZE_MAX_BYTES },
-		);
+		return truncatedResult(indexDetail(items, indexVal, compactVal), {
+			toolName: "session_analyze",
+			label: "entries",
+			maxLines: ANALYZE_MAX_LINES,
+			maxBytes: ANALYZE_MAX_BYTES,
+		});
 	}
 
 	// ── range / offset 切片 ─────────────────────
@@ -233,7 +267,12 @@ export function doEntries(
 		if (!parsed) {
 			return truncatedResult(
 				`❌ 无效 range 格式: "${rangeVal}"（支持 "last:N" 或 "M-N"）`,
-				{ toolName: "session_analyze", label: "entries", maxLines: 100, maxBytes: 10_000 },
+				{
+					toolName: "session_analyze",
+					label: "entries",
+					maxLines: 100,
+					maxBytes: 10_000,
+				},
 			);
 		}
 		start = parsed.start;
@@ -252,8 +291,8 @@ export function doEntries(
 	const previewLen = isCompact ? 60 : 100;
 
 	const lines = items.map((entry, idx) => {
-		const filteredIdx = start + idx;
-		const globalIdx = slicedOrigIndices[idx];  // 显示原始数组索引
+		const _filteredIdx = start + idx;
+		const globalIdx = slicedOrigIndices[idx]; // 显示原始数组索引
 		const role = entry.message?.role ?? "";
 		const timeFull = entry.timestamp ? fmtTime(entry.timestamp) : "";
 		const timeShort = entry.timestamp ? fmtTimeShort(entry.timestamp) : "";
@@ -298,10 +337,25 @@ export function doEntries(
 	const fileDesc = fileVal ? `（文件: "${fileVal}"）` : "";
 
 	const hasFilter = !!(grepVal || toolNameVal || fileVal);
-	const navHint = buildNavHint(entries.length, start, items.length, rangeVal, offsetVal, grepVal, toolNameVal, indexVal, hasFilter);
+	const navHint = buildNavHint(
+		entries.length,
+		start,
+		items.length,
+		rangeVal,
+		offsetVal,
+		grepVal,
+		toolNameVal,
+		indexVal,
+		hasFilter,
+	);
 
 	return truncatedResult(
 		`条目列表 ${rangeDesc}${filterDesc}${toolDesc}${fileDesc}：\n${lines.join("\n")}${navHint}`,
-		{ toolName: "session_analyze", label: "entries", maxLines: ANALYZE_MAX_LINES, maxBytes: ANALYZE_MAX_BYTES },
+		{
+			toolName: "session_analyze",
+			label: "entries",
+			maxLines: ANALYZE_MAX_LINES,
+			maxBytes: ANALYZE_MAX_BYTES,
+		},
 	);
 }

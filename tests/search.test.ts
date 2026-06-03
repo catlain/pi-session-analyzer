@@ -1,16 +1,16 @@
 /**
-	* session-analyzer search 模块 — 单元测试
-	*
-	* 测试：doList, doGrep, doFile
-	* _shared/tool-output 由 vitest.config.ts 的 alias 重定向到 mock
-	*/
+ * session-analyzer search 模块 — 单元测试
+ *
+ * 测试：doList, doGrep, doFile
+ * _shared/tool-output 由 vitest.config.ts 的 alias 重定向到 mock
+ */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs";
-import * as path from "node:path";
 import * as os from "node:os";
+import * as path from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { doList, doGrep } from "../search";
+import { doGrep, doList } from "../search";
 import { doFile } from "../search-file";
 
 // ── 测试用临时会话文件 ────────────────────────────────────
@@ -18,33 +18,86 @@ import { doFile } from "../search-file";
 const tmpDir = path.join(os.tmpdir(), `session-analyzer-test-${Date.now()}`);
 const sessionSubDir = path.join(tmpDir, "20260512");
 const SESSION_FILE = path.join(sessionSubDir, "20260512T100000_test001.jsonl");
-const SESSION_FILE_2 = path.join(sessionSubDir, "20260512T110000_test002.jsonl");
+const SESSION_FILE_2 = path.join(
+	sessionSubDir,
+	"20260512T110000_test002.jsonl",
+);
 
 const SESSION_1_ENTRIES = [
 	{ type: "session", cwd: "/project" },
-	{ type: "message", message: { role: "user", content: [{ type: "text", text: "Edit main.ts" }] } },
-	{ type: "message", message: { role: "assistant", content: [
-		{ type: "toolCall", name: "edit", arguments: { path: "/project/src/main.ts" } },
-	] } },
-	{ type: "message", message: { role: "assistant", content: [{ type: "text", text: "Done editing main.ts" }] } },
+	{
+		type: "message",
+		message: {
+			role: "user",
+			content: [{ type: "text", text: "Edit main.ts" }],
+		},
+	},
+	{
+		type: "message",
+		message: {
+			role: "assistant",
+			content: [
+				{
+					type: "toolCall",
+					name: "edit",
+					arguments: { path: "/project/src/main.ts" },
+				},
+			],
+		},
+	},
+	{
+		type: "message",
+		message: {
+			role: "assistant",
+			content: [{ type: "text", text: "Done editing main.ts" }],
+		},
+	},
 ];
 
 const SESSION_2_ENTRIES = [
 	{ type: "session", cwd: "/project" },
-	{ type: "message", message: { role: "user", content: [{ type: "text", text: "Write a new file" }] } },
-	{ type: "message", message: { role: "assistant", content: [
-		{ type: "toolCall", name: "write", arguments: { path: "/project/src/helper.ts" } },
-	] } },
+	{
+		type: "message",
+		message: {
+			role: "user",
+			content: [{ type: "text", text: "Write a new file" }],
+		},
+	},
+	{
+		type: "message",
+		message: {
+			role: "assistant",
+			content: [
+				{
+					type: "toolCall",
+					name: "write",
+					arguments: { path: "/project/src/helper.ts" },
+				},
+			],
+		},
+	},
 ];
 
 function setupSessionFiles() {
 	fs.mkdirSync(sessionSubDir, { recursive: true });
-	fs.writeFileSync(SESSION_FILE, SESSION_1_ENTRIES.map(e => JSON.stringify(e)).join("\n"), "utf-8");
-	fs.writeFileSync(SESSION_FILE_2, SESSION_2_ENTRIES.map(e => JSON.stringify(e)).join("\n"), "utf-8");
+	fs.writeFileSync(
+		SESSION_FILE,
+		SESSION_1_ENTRIES.map((e) => JSON.stringify(e)).join("\n"),
+		"utf-8",
+	);
+	fs.writeFileSync(
+		SESSION_FILE_2,
+		SESSION_2_ENTRIES.map((e) => JSON.stringify(e)).join("\n"),
+		"utf-8",
+	);
 }
 
 function cleanupSessionFiles() {
-	try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+	try {
+		fs.rmSync(tmpDir, { recursive: true, force: true });
+	} catch {
+		/* ignore */
+	}
 }
 
 // ── doList ────────────────────────────────────────────────
@@ -186,4 +239,3 @@ describe("doFile", () => {
 		expect(text).toContain("1 个");
 	});
 });
-

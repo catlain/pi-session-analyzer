@@ -4,21 +4,61 @@
  * 覆盖：紧凑格式、grep+compact、offset+compact、Options签名、边缘情况
  */
 
-import { describe, it, expect } from "vitest";
-import { doEntries } from "../entries";
+import { describe, expect, it } from "vitest";
 import type { Entry } from "../core";
+import { doEntries } from "../entries";
 
 const ENTRIES: Entry[] = [
 	{ type: "session", cwd: "/project", parentSession: "p1" } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:00.000Z", message: { role: "user", content: [{ type: "text", text: "Hello, please help with the code" }], model: "gpt-4" } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:01.000Z", message: { role: "assistant", content: [{ type: "toolCall", name: "read" }] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:02.000Z", message: { role: "toolResult", content: [{ type: "text", text: "Here is the file content" }] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:05.000Z", message: { role: "user", content: "Edit the file now" } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:10.000Z", message: { role: "assistant", content: [
-		{ type: "toolCall", name: "edit", arguments: { path: "/src/main.ts" } },
-		{ type: "toolCall", name: "bash", arguments: { cmd: "npm test" } },
-	] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:15.000Z", message: { role: "assistant", content: [{ type: "text", text: "All done" }] } } as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:00.000Z",
+		message: {
+			role: "user",
+			content: [{ type: "text", text: "Hello, please help with the code" }],
+			model: "gpt-4",
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:01.000Z",
+		message: {
+			role: "assistant",
+			content: [{ type: "toolCall", name: "read" }],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:02.000Z",
+		message: {
+			role: "toolResult",
+			content: [{ type: "text", text: "Here is the file content" }],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:05.000Z",
+		message: { role: "user", content: "Edit the file now" },
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:10.000Z",
+		message: {
+			role: "assistant",
+			content: [
+				{ type: "toolCall", name: "edit", arguments: { path: "/src/main.ts" } },
+				{ type: "toolCall", name: "bash", arguments: { cmd: "npm test" } },
+			],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:15.000Z",
+		message: {
+			role: "assistant",
+			content: [{ type: "text", text: "All done" }],
+		},
+	} as Entry,
 ];
 
 function getText(result: ReturnType<typeof doEntries>): string {
@@ -53,13 +93,17 @@ describe("doEntries compact=true", () => {
 	it("预览限制在 60 字符", () => {
 		const longText = "a".repeat(200);
 		const entries: Entry[] = [
-			{ type: "message", timestamp: "2026-05-12T02:00:00.000Z", message: { role: "user", content: longText } } as Entry,
+			{
+				type: "message",
+				timestamp: "2026-05-12T02:00:00.000Z",
+				message: { role: "user", content: longText },
+			} as Entry,
 		];
 		const result = doEntries(entries, 10, undefined, undefined, true);
 		const text = getText(result);
-		const previewLine = text.split("\n").find(l => l.includes("aaaa"));
+		const previewLine = text.split("\n").find((l) => l.includes("aaaa"));
 		expect(previewLine).toBeDefined();
-		const aCount = previewLine!.split("").filter(c => c === "a").length;
+		const aCount = previewLine!.split("").filter((c) => c === "a").length;
 		expect(aCount).toBeLessThanOrEqual(60);
 	});
 
@@ -123,7 +167,11 @@ describe("doEntries DoEntriesOptions 签名", () => {
 	});
 
 	it("对象签名支持 grep + compact", () => {
-		const result = doEntries(ENTRIES, { limit: 10, grep: "edit", compact: true });
+		const result = doEntries(ENTRIES, {
+			limit: 10,
+			grep: "edit",
+			compact: true,
+		});
 		const text = getText(result);
 		expect(text).toContain("edit");
 		expect(text).not.toContain("Hello");
@@ -156,7 +204,11 @@ describe("doEntries 边缘情况", () => {
 
 	it("未知 role 使用截断处理", () => {
 		const entries: Entry[] = [
-			{ type: "message", timestamp: "2026-05-12T02:00:00.000Z", message: { role: "custom_role", content: "test" } } as Entry,
+			{
+				type: "message",
+				timestamp: "2026-05-12T02:00:00.000Z",
+				message: { role: "custom_role", content: "test" },
+			} as Entry,
 		];
 		const result = doEntries(entries, 10, undefined, undefined, true);
 		const text = getText(result);

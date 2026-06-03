@@ -2,8 +2,8 @@
  * session-takeover 类型、常量、辅助函数、格式化
  */
 
-import type { Entry, ContentPart } from "./core";
-import { extractText, fmtTime } from "./core";
+import type { ContentPart, Entry } from "./core";
+import { extractText } from "./core";
 
 // ── 类型 ────────────────────────────────────────────────
 
@@ -36,7 +36,8 @@ export const MAX_INTENT_MSGS = 8;
 export const MAX_SUMMARY_LEN = 800;
 export const SCAN_TAIL_ASSISTANTS = 5;
 
-export const NEXT_STEP_PATTERNS = /继续\s*Step|接下来|下一步|TODO|FIXME|待完成/g;
+export const NEXT_STEP_PATTERNS =
+	/继续\s*Step|接下来|下一步|TODO|FIXME|待完成/g;
 export const DECISION_PATTERNS = /不用|改为|换成|必须|禁止|我觉得|用.*不要/g;
 
 // ── 辅助函数 ────────────────────────────────────────────
@@ -50,11 +51,13 @@ export function getText(entry: Entry): string {
 /** 截断文本到指定长度 */
 export function truncate(text: string, max: number): string {
 	if (text.length <= max) return text;
-	return text.slice(0, max - 3) + "...";
+	return `${text.slice(0, max - 3)}...`;
 }
 
 /** 检查 content parts 中是否包含 toolCall */
-export function hasToolCall(content: ContentPart[] | string | undefined): boolean {
+export function hasToolCall(
+	content: ContentPart[] | string | undefined,
+): boolean {
 	if (!Array.isArray(content)) return false;
 	return content.some((p) => p.type === "toolCall");
 }
@@ -65,7 +68,9 @@ export function formatReport(r: TakeoverReport): string[] {
 	const L: string[] = [];
 	L.push(`# 会话接手报告: ${r.sessionId}`);
 	L.push(`开始: ${r.sessionStart}  模型: ${r.model}`);
-	L.push(`统计: ${r.stats.userMsgs} user / ${r.stats.assistantMsgs} assistant / ${r.stats.toolCalls} toolCalls / ${r.stats.edits} edits / ${r.stats.writes} writes`);
+	L.push(
+		`统计: ${r.stats.userMsgs} user / ${r.stats.assistantMsgs} assistant / ${r.stats.toolCalls} toolCalls / ${r.stats.edits} edits / ${r.stats.writes} writes`,
+	);
 	L.push("");
 
 	if (r.userIntent.length > 0) {

@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	checkSearchOnly,
-	checkRepeatedErrors,
 	checkEditWriteRatio,
+	checkRepeatedErrors,
 	checkRulesCoverage,
+	checkSearchOnly,
 } from "../audit-rules";
 import { assistantWithToolCalls, errorResult } from "./audit-helpers";
 
@@ -64,14 +64,19 @@ describe("checkRepeatedErrors", () => {
 
 	it("不足 3 次不报警", () => {
 		expect(
-			checkRepeatedErrors([errorResult("edit", "err"), errorResult("edit", "err")]),
+			checkRepeatedErrors([
+				errorResult("edit", "err"),
+				errorResult("edit", "err"),
+			]),
 		).toHaveLength(0);
 	});
 });
 
 describe("checkEditWriteRatio", () => {
 	it("write 远多于 edit 时报告 info", () => {
-		const calls = Array.from({ length: 12 }, (_, i) => ({ name: i < 3 ? "edit" : "write" }));
+		const calls = Array.from({ length: 12 }, (_, i) => ({
+			name: i < 3 ? "edit" : "write",
+		}));
 		const issues = checkEditWriteRatio([assistantWithToolCalls(calls)]);
 		expect(issues).toHaveLength(1);
 		expect(issues[0].severity).toBe("info");
@@ -94,13 +99,17 @@ describe("checkEditWriteRatio", () => {
 describe("checkRulesCoverage", () => {
 	it("有全局规则时不报警", () => {
 		expect(
-			checkRulesCoverage([{ source: "AGENTS.md", scope: "global", path: "/foo", content: "" }]),
+			checkRulesCoverage([
+				{ source: "AGENTS.md", scope: "global", path: "/foo", content: "" },
+			]),
 		).toHaveLength(0);
 	});
 
 	it("无全局规则时报告 info", () => {
 		expect(
-			checkRulesCoverage([{ source: "AGENTS.md", scope: "project", path: "/foo", content: "" }]),
+			checkRulesCoverage([
+				{ source: "AGENTS.md", scope: "project", path: "/foo", content: "" },
+			]),
 		).toHaveLength(1);
 	});
 });

@@ -2,21 +2,61 @@
  * entries extractEntryText + compact=false 回归 — 单元测试
  */
 
-import { describe, it, expect } from "vitest";
-import { doEntries, extractEntryText } from "../entries";
+import { describe, expect, it } from "vitest";
 import type { Entry } from "../core";
+import { doEntries, extractEntryText } from "../entries";
 
 const ENTRIES: Entry[] = [
 	{ type: "session", cwd: "/project", parentSession: "p1" } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:00.000Z", message: { role: "user", content: [{ type: "text", text: "Hello, please help with the code" }], model: "gpt-4" } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:01.000Z", message: { role: "assistant", content: [{ type: "toolCall", name: "read" }] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:02.000Z", message: { role: "toolResult", content: [{ type: "text", text: "Here is the file content" }] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:05.000Z", message: { role: "user", content: "Edit the file now" } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:10.000Z", message: { role: "assistant", content: [
-		{ type: "toolCall", name: "edit", arguments: { path: "/src/main.ts" } },
-		{ type: "toolCall", name: "bash", arguments: { cmd: "npm test" } },
-	] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:15.000Z", message: { role: "assistant", content: [{ type: "text", text: "All done" }] } } as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:00.000Z",
+		message: {
+			role: "user",
+			content: [{ type: "text", text: "Hello, please help with the code" }],
+			model: "gpt-4",
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:01.000Z",
+		message: {
+			role: "assistant",
+			content: [{ type: "toolCall", name: "read" }],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:02.000Z",
+		message: {
+			role: "toolResult",
+			content: [{ type: "text", text: "Here is the file content" }],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:05.000Z",
+		message: { role: "user", content: "Edit the file now" },
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:10.000Z",
+		message: {
+			role: "assistant",
+			content: [
+				{ type: "toolCall", name: "edit", arguments: { path: "/src/main.ts" } },
+				{ type: "toolCall", name: "bash", arguments: { cmd: "npm test" } },
+			],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:15.000Z",
+		message: {
+			role: "assistant",
+			content: [{ type: "text", text: "All done" }],
+		},
+	} as Entry,
 ];
 
 function getText(result: ReturnType<typeof doEntries>): string {
@@ -68,7 +108,9 @@ describe("doEntries grep 正则支持", () => {
 		expect(text).toContain("Hello");
 		expect(text).toContain("All done");
 		// 导航提示含 toolName="edit"，所以只检查条目行不含 edit 工具调用
-		const entryLines = text.split("\n").filter((l: string) => l.match(/^\\s*\\d/));
+		const entryLines = text
+			.split("\n")
+			.filter((l: string) => l.match(/^\\s*\\d/));
 		expect(entryLines.every((l: string) => !l.includes("edit("))).toBe(true);
 	});
 
@@ -88,8 +130,16 @@ describe("doEntries grep 正则支持", () => {
 
 	it("中文关键词匹配", () => {
 		const entries: Entry[] = [
-			{ type: "message", timestamp: "2026-05-12T02:00:00.000Z", message: { role: "user", content: "截图验证" } } as Entry,
-			{ type: "message", timestamp: "2026-05-12T02:00:01.000Z", message: { role: "assistant", content: "All done" } } as Entry,
+			{
+				type: "message",
+				timestamp: "2026-05-12T02:00:00.000Z",
+				message: { role: "user", content: "截图验证" },
+			} as Entry,
+			{
+				type: "message",
+				timestamp: "2026-05-12T02:00:01.000Z",
+				message: { role: "assistant", content: "All done" },
+			} as Entry,
 		];
 		const result = doEntries(entries, 10, undefined, "截图");
 		const text = getText(result);
@@ -99,9 +149,21 @@ describe("doEntries grep 正则支持", () => {
 
 	it("中文 + 英文混合 | 分隔", () => {
 		const entries: Entry[] = [
-			{ type: "message", timestamp: "2026-05-12T02:00:00.000Z", message: { role: "user", content: "截图验证" } } as Entry,
-			{ type: "message", timestamp: "2026-05-12T02:00:01.000Z", message: { role: "assistant", content: "screenshot taken" } } as Entry,
-			{ type: "message", timestamp: "2026-05-12T02:00:02.000Z", message: { role: "assistant", content: "no match here" } } as Entry,
+			{
+				type: "message",
+				timestamp: "2026-05-12T02:00:00.000Z",
+				message: { role: "user", content: "截图验证" },
+			} as Entry,
+			{
+				type: "message",
+				timestamp: "2026-05-12T02:00:01.000Z",
+				message: { role: "assistant", content: "screenshot taken" },
+			} as Entry,
+			{
+				type: "message",
+				timestamp: "2026-05-12T02:00:02.000Z",
+				message: { role: "assistant", content: "no match here" },
+			} as Entry,
 		];
 		const result = doEntries(entries, 10, undefined, "截图|screenshot");
 		const text = getText(result);
@@ -119,8 +181,16 @@ describe("doEntries grep 正则支持", () => {
 
 	it("正则特殊字符作为字面量也能匹配", () => {
 		const entries: Entry[] = [
-			{ type: "message", timestamp: "2026-05-12T02:00:00.000Z", message: { role: "user", content: "price is $50" } } as Entry,
-			{ type: "message", timestamp: "2026-05-12T02:00:01.000Z", message: { role: "assistant", content: "no dollar here" } } as Entry,
+			{
+				type: "message",
+				timestamp: "2026-05-12T02:00:00.000Z",
+				message: { role: "user", content: "price is $50" },
+			} as Entry,
+			{
+				type: "message",
+				timestamp: "2026-05-12T02:00:01.000Z",
+				message: { role: "assistant", content: "no dollar here" },
+			} as Entry,
 		];
 		const result = doEntries(entries, 10, undefined, "$50");
 		const text = getText(result);

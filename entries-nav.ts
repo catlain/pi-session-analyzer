@@ -2,13 +2,20 @@
  * entries 导航辅助函数 — parseRange / index 详情 / toolName 过滤
  */
 
-import { matchToolName, extractStringValues, matchFile } from "@pi-atelier/shared-utils";
-import { fmtTime } from "./core";
+import {
+	extractStringValues,
+	matchFile,
+	matchToolName,
+} from "@pi-atelier/shared-utils";
 import type { Entry } from "./core";
+import { fmtTime } from "./core";
 
 // ── range 解析 ────────────────────────────────────────
 
-export function parseRange(range: string, total: number): { start: number; end: number } | null {
+export function parseRange(
+	range: string,
+	total: number,
+): { start: number; end: number } | null {
 	// "last:N"
 	const lastM = range.match(/^last:(\d+)$/i);
 	if (lastM) {
@@ -35,9 +42,13 @@ function hasToolName(entry: Entry, toolName: string): boolean {
 	if (!entry.message) return false;
 
 	// assistant 消息含 toolCalls
-	if (entry.message.role === "assistant" && Array.isArray(entry.message.content)) {
+	if (
+		entry.message.role === "assistant" &&
+		Array.isArray(entry.message.content)
+	) {
 		for (const part of entry.message.content) {
-			if (part.type === "toolCall" && matchToolName(toolName, part.name)) return true;
+			if (part.type === "toolCall" && matchToolName(toolName, part.name))
+				return true;
 		}
 	}
 
@@ -57,7 +68,10 @@ function extractFilePaths(entry: Entry): string[] {
 	if (!entry.message) return [];
 	const paths: string[] = [];
 
-	if (entry.message.role === "assistant" && Array.isArray(entry.message.content)) {
+	if (
+		entry.message.role === "assistant" &&
+		Array.isArray(entry.message.content)
+	) {
 		for (const part of entry.message.content) {
 			if (part.type === "toolCall" && part.arguments) {
 				paths.push(...extractStringValues(part.arguments));
@@ -76,7 +90,8 @@ export function filterByFile(entries: Entry[], file: string): Entry[] {
 /** 获取条目完整文本（不截断） */
 function fullText(entry: Entry): string {
 	if (!entry.message) {
-		if (entry.type === "session") return `[session start] cwd=${entry.cwd ?? "?"}`;
+		if (entry.type === "session")
+			return `[session start] cwd=${entry.cwd ?? "?"}`;
 		return entry.type;
 	}
 	const content = entry.message.content;
@@ -86,7 +101,9 @@ function fullText(entry: Entry): string {
 		for (const part of content) {
 			if (part.type === "text" && part.text) parts.push(part.text);
 			if (part.type === "toolCall") {
-				parts.push(`${part.name}(${typeof part.arguments === "string" ? part.arguments : JSON.stringify(part.arguments ?? "")})`);
+				parts.push(
+					`${part.name}(${typeof part.arguments === "string" ? part.arguments : JSON.stringify(part.arguments ?? "")})`,
+				);
 			}
 		}
 		return parts.join("\n");
@@ -99,11 +116,11 @@ export function buildNavHint(
 	total: number,
 	start: number,
 	shown: number,
-	rangeVal?: string,
-	offsetVal?: number,
+	_rangeVal?: string,
+	_offsetVal?: number,
 	grepVal?: string,
 	toolNameVal?: string,
-	indexVal?: number,
+	_indexVal?: number,
 	hasGrepOrFilter?: boolean,
 ): string {
 	if (total === 0) return "";
@@ -128,13 +145,20 @@ export function buildNavHint(
 
 	// 其他功能提示
 	tips.push(`index=N  查看第 N 条详情`);
-	if (hasGrepOrFilter) tips.push(`rawIndex=N  用原始会话索引定位上下文（grep/toolName 过滤后跳回原始上下文）`);
+	if (hasGrepOrFilter)
+		tips.push(
+			`rawIndex=N  用原始会话索引定位上下文（grep/toolName 过滤后跳回原始上下文）`,
+		);
 	if (!grepVal) tips.push(`grep="关键词"  按内容过滤`);
 	if (!toolNameVal) tips.push(`toolName="edit"  按工具名过滤`);
 
 	return `\n\n📊 共 ${total} 条。继续查看请调用 session_analyze(sessionId, "entries", ...)：\n  • ${tips.join("\n  • ")}`;
 }
-export function indexDetail(entries: Entry[], index: number, compact?: boolean): string {
+export function indexDetail(
+	entries: Entry[],
+	index: number,
+	compact?: boolean,
+): string {
 	if (index < 0 || index >= entries.length) {
 		return `❌ 索引 ${index} 超出范围（0-${entries.length - 1}）`;
 	}
@@ -154,18 +178,25 @@ export function indexDetail(entries: Entry[], index: number, compact?: boolean):
 			const role = entry.message?.role ?? "";
 			const time = entry.timestamp ? fmtTime(entry.timestamp) : "";
 			const text = fullText(entry);
-			const display = text.length > INDEX_DETAIL_MAX
-				? text.slice(0, INDEX_DETAIL_MAX) + `\n... (截断，原文 ${text.length} 字符)`
-				: text;
+			const display =
+				text.length > INDEX_DETAIL_MAX
+					? `${text.slice(0, INDEX_DETAIL_MAX)}\n... (截断，原文 ${text.length} 字符)`
+					: text;
 
 			lines.push(`┌─── [${i}] ${role} ${time} ───`);
 			if (entry.message?.toolName) {
 				lines.push(`│ 工具: ${entry.message.toolName}`);
 			}
-			if (entry.message?.role === "assistant" && Array.isArray(entry.message?.content)) {
+			if (
+				entry.message?.role === "assistant" &&
+				Array.isArray(entry.message?.content)
+			) {
 				for (const part of entry.message.content) {
 					if (part.type === "toolCall") {
-						const args = typeof part.arguments === "string" ? part.arguments : JSON.stringify(part.arguments ?? "");
+						const args =
+							typeof part.arguments === "string"
+								? part.arguments
+								: JSON.stringify(part.arguments ?? "");
 						lines.push(`│ 调用: ${part.name}(${args.slice(0, 80)})`);
 					}
 				}
@@ -178,11 +209,17 @@ export function indexDetail(entries: Entry[], index: number, compact?: boolean):
 			// 上下文行 — 格式与列表模式统一
 			const role = entry.message?.role ?? "";
 			const time = entry.timestamp ? fmtTime(entry.timestamp) : "";
-			const text = fullText(entry).slice(0, compact ? 60 : 100).replace(/\n/g, "\\n");
+			const text = fullText(entry)
+				.slice(0, compact ? 60 : 100)
+				.replace(/\n/g, "\\n");
 			if (compact) {
-				lines.push(`[${String(i).padStart(3)}] ${role.slice(0, 7).padEnd(7)} ${time.slice(11) || ""} ${text || "(empty)"}`);
+				lines.push(
+					`[${String(i).padStart(3)}] ${role.slice(0, 7).padEnd(7)} ${time.slice(11) || ""} ${text || "(empty)"}`,
+				);
 			} else {
-				lines.push(`${String(i).padStart(4)} | ${entry.type.padEnd(8)} | ${role.padEnd(12)} | ${time} | ${text || "(empty)"}`);
+				lines.push(
+					`${String(i).padStart(4)} | ${entry.type.padEnd(8)} | ${role.padEnd(12)} | ${time} | ${text || "(empty)"}`,
+				);
 			}
 		}
 	}

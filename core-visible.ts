@@ -4,8 +4,8 @@
 // 不在 ~/.pi/agent/sessions/ 中，需要额外的扫描和 ID 解析逻辑。
 
 import { readdir, readFile, stat } from "node:fs/promises";
-import { join, basename } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 // 扫描 /tmp/pi-visible-*/session.jsonl
 export async function getVisibleSubagentFiles(): Promise<string[]> {
@@ -23,19 +23,21 @@ export async function getVisibleSubagentFiles(): Promise<string[]> {
 		try {
 			const s = await stat(sessionFile);
 			if (s.isFile()) results.push(sessionFile);
-		} catch {
-			continue;
-		}
+		} catch {}
 	}
 	return results;
 }
 
 // 从 session.jsonl 首行提取 session ID
-export function extractSessionIdFromFirstLine(line: string): string | undefined {
+export function extractSessionIdFromFirstLine(
+	line: string,
+): string | undefined {
 	try {
 		const obj = JSON.parse(line);
 		if (obj.type === "session" && typeof obj.id === "string") return obj.id;
-	} catch { /* skip */ }
+	} catch {
+		/* skip */
+	}
 	return undefined;
 }
 
@@ -53,9 +55,11 @@ export async function resolveVisibleSession(
 			const firstLine = content.split("\n")[0]?.trim();
 			if (firstLine) {
 				const id = extractSessionIdFromFirstLine(firstLine);
-				if (id && id.includes(sessionId)) return f;
+				if (id?.includes(sessionId)) return f;
 			}
-		} catch { /* skip */ }
+		} catch {
+			/* skip */
+		}
 	}
 	return undefined;
 }

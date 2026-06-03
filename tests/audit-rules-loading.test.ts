@@ -5,7 +5,7 @@
  * 验证规则头内容。无违规场景只返回 "未发现违规问题"。
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Entry } from "../audit-types";
 
 vi.mock("node:fs/promises", () => ({
@@ -23,7 +23,11 @@ function sessionEntry(cwd: string): Entry {
 function bashWriteViolation(): Entry {
 	return {
 		type: "message",
-		message: { role: "toolResult", toolName: "bash", content: "cat > /tmp/x.txt" },
+		message: {
+			role: "toolResult",
+			toolName: "bash",
+			content: "cat > /tmp/x.txt",
+		},
 	};
 }
 
@@ -35,7 +39,10 @@ describe("doAudit — 规则加载", () => {
 	it("全局 AGENTS.md 存在时规则头显示 [global]", async () => {
 		(readFile as any).mockImplementation((path: string) => {
 			const normalized = path.replace(/\\/g, "/");
-			if (normalized.includes("AGENTS.md") && normalized.includes(".pi/agent")) {
+			if (
+				normalized.includes("AGENTS.md") &&
+				normalized.includes(".pi/agent")
+			) {
 				return Promise.resolve("test: always use edit");
 			}
 			return Promise.reject(new Error("not found"));
@@ -50,7 +57,10 @@ describe("doAudit — 规则加载", () => {
 	it("有全局规则时规则头不显示覆盖建议", async () => {
 		(readFile as any).mockImplementation((path: string) => {
 			const normalized = path.replace(/\\/g, "/");
-			if (normalized.includes("AGENTS.md") && normalized.includes(".pi/agent")) {
+			if (
+				normalized.includes("AGENTS.md") &&
+				normalized.includes(".pi/agent")
+			) {
 				return Promise.resolve("test: always use edit");
 			}
 			return Promise.reject(new Error("not found"));
@@ -76,7 +86,10 @@ describe("doAudit — 规则加载", () => {
 	it("sessionCwd 时加载项目 CLAUDE.md", async () => {
 		(readFile as any).mockImplementation((path: string) => {
 			const normalized = path.replace(/\\/g, "/");
-			if (normalized.includes("AGENTS.md") && normalized.includes(".pi/agent")) {
+			if (
+				normalized.includes("AGENTS.md") &&
+				normalized.includes(".pi/agent")
+			) {
 				return Promise.resolve("global rules");
 			}
 			if (normalized.includes("CLAUDE.md")) {
@@ -84,7 +97,10 @@ describe("doAudit — 规则加载", () => {
 			}
 			return Promise.reject(new Error("not found"));
 		});
-		const result = await doAudit([sessionEntry("/project"), bashWriteViolation()], "/project");
+		const result = await doAudit(
+			[sessionEntry("/project"), bashWriteViolation()],
+			"/project",
+		);
 		const text = result.content[0].text;
 		expect(text).toContain("[global]");
 		expect(text).toContain("[project]");
@@ -94,12 +110,18 @@ describe("doAudit — 规则加载", () => {
 	it("sessionCwd 无项目规则时只显示全局", async () => {
 		(readFile as any).mockImplementation((path: string) => {
 			const normalized = path.replace(/\\/g, "/");
-			if (normalized.includes("AGENTS.md") && normalized.includes(".pi/agent")) {
+			if (
+				normalized.includes("AGENTS.md") &&
+				normalized.includes(".pi/agent")
+			) {
 				return Promise.resolve("global rules");
 			}
 			return Promise.reject(new Error("not found"));
 		});
-		const result = await doAudit([sessionEntry("/project"), bashWriteViolation()], "/project");
+		const result = await doAudit(
+			[sessionEntry("/project"), bashWriteViolation()],
+			"/project",
+		);
 		const text = result.content[0].text;
 		expect(text).toContain("[global]");
 		expect(text).not.toContain("[project]");
@@ -116,7 +138,10 @@ describe("doAudit — 规则加载", () => {
 			}
 			return Promise.reject(new Error("not found"));
 		});
-		const result = await doAudit([sessionEntry("/project"), bashWriteViolation()], "/project");
+		const result = await doAudit(
+			[sessionEntry("/project"), bashWriteViolation()],
+			"/project",
+		);
 		const text = result.content[0].text;
 		expect(text).toContain("AGENTS.md");
 		expect(text).toContain("CLAUDE.md");

@@ -8,25 +8,99 @@
  * 查看过滤后第 1 条在原始列表中的位置及其上下文。
  */
 
-import { describe, it, expect } from "vitest";
-import { doEntries } from "../entries";
+import { describe, expect, it } from "vitest";
 import type { Entry } from "../core";
+import { doEntries } from "../entries";
 
 const ENTRIES: Entry[] = [
 	{ type: "session", cwd: "/project", parentSession: "p1" } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:00.000Z", message: { role: "user", content: [{ type: "text", text: "帮我分析这个项目的架构" }], model: "gpt-4" } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:01.000Z", message: { role: "assistant", content: [{ type: "toolCall", name: "read", arguments: { path: "/src/main.ts" } }] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:02.000Z", message: { role: "toolResult", content: [{ type: "text", text: "file content here" }] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:03.000Z", message: { role: "assistant", content: [{ type: "text", text: "Let me check more files" }] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:04.000Z", message: { role: "assistant", content: [
-		{ type: "toolCall", name: "edit", arguments: { path: "/src/main.ts" } },
-		{ type: "toolCall", name: "bash", arguments: { cmd: "npm test" } },
-	] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:05.000Z", message: { role: "user", content: "edit the config" } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:06.000Z", message: { role: "assistant", content: [{ type: "toolCall", name: "edit", arguments: { path: "/config.json" } }] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:07.000Z", message: { role: "assistant", content: [{ type: "text", text: "All done, tests pass" }] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:08.000Z", message: { role: "user", content: [{ type: "text", text: "好的，提交吧" }] } } as Entry,
-	{ type: "message", timestamp: "2026-05-12T02:00:09.000Z", message: { role: "assistant", content: [{ type: "toolCall", name: "bash", arguments: { cmd: "git commit" } }] } } as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:00.000Z",
+		message: {
+			role: "user",
+			content: [{ type: "text", text: "帮我分析这个项目的架构" }],
+			model: "gpt-4",
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:01.000Z",
+		message: {
+			role: "assistant",
+			content: [
+				{ type: "toolCall", name: "read", arguments: { path: "/src/main.ts" } },
+			],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:02.000Z",
+		message: {
+			role: "toolResult",
+			content: [{ type: "text", text: "file content here" }],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:03.000Z",
+		message: {
+			role: "assistant",
+			content: [{ type: "text", text: "Let me check more files" }],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:04.000Z",
+		message: {
+			role: "assistant",
+			content: [
+				{ type: "toolCall", name: "edit", arguments: { path: "/src/main.ts" } },
+				{ type: "toolCall", name: "bash", arguments: { cmd: "npm test" } },
+			],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:05.000Z",
+		message: { role: "user", content: "edit the config" },
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:06.000Z",
+		message: {
+			role: "assistant",
+			content: [
+				{ type: "toolCall", name: "edit", arguments: { path: "/config.json" } },
+			],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:07.000Z",
+		message: {
+			role: "assistant",
+			content: [{ type: "text", text: "All done, tests pass" }],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:08.000Z",
+		message: {
+			role: "user",
+			content: [{ type: "text", text: "好的，提交吧" }],
+		},
+	} as Entry,
+	{
+		type: "message",
+		timestamp: "2026-05-12T02:00:09.000Z",
+		message: {
+			role: "assistant",
+			content: [
+				{ type: "toolCall", name: "bash", arguments: { cmd: "git commit" } },
+			],
+		},
+	} as Entry,
 ];
 
 function getText(result: ReturnType<typeof doEntries>): string {
@@ -39,9 +113,9 @@ describe("entries rawIndex 过滤后序号映射", () => {
 		// rawIndex=0 → 原始索引 5 → 显示 entry[5] 及上下文 [2..8]
 		const result = doEntries(ENTRIES, { grep: "edit", rawIndex: 0 });
 		const text = getText(result);
-		expect(text).toContain("edit");     // 目标条目内容
-		expect(text).toContain("[5]");      // 原始索引 5
-		expect(text).toContain("   4 | message");	// 上下文（列表格式）
+		expect(text).toContain("edit"); // 目标条目内容
+		expect(text).toContain("[5]"); // 原始索引 5
+		expect(text).toContain("   4 | message"); // 上下文（列表格式）
 	});
 
 	it("rawIndex=1 + grep='edit' → 映射到第二个匹配的原始索引", () => {

@@ -5,7 +5,7 @@
  * @pi-atelier/shared-utils 由 vitest.config.ts 的 alias 重定向到 mock
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Entry } from "../../core";
 
 // 先 mock 依赖
@@ -42,7 +42,10 @@ function makeUser(text: string, idx = 0): Entry {
 	};
 }
 
-function makeAssistant(parts: Array<{ type: string; text?: string }>, idx = 0): Entry {
+function makeAssistant(
+	parts: Array<{ type: string; text?: string }>,
+	idx = 0,
+): Entry {
 	return {
 		type: "message",
 		id: `a-${idx}`,
@@ -50,11 +53,18 @@ function makeAssistant(parts: Array<{ type: string; text?: string }>, idx = 0): 
 	};
 }
 
-function makeToolCall(name: string, args: Record<string, unknown>, idx = 0): Entry {
+function makeToolCall(
+	name: string,
+	args: Record<string, unknown>,
+	idx = 0,
+): Entry {
 	return {
 		type: "message",
 		id: `tc-${idx}`,
-		message: { role: "assistant", content: [{ type: "toolCall", name, arguments: args }] },
+		message: {
+			role: "assistant",
+			content: [{ type: "toolCall", name, arguments: args }],
+		},
 	};
 }
 
@@ -73,18 +83,31 @@ describe("doTakeover", () => {
 			makeUser("用 commander 不用 yargs", 1),
 			makeToolCall("edit", { path: "/src/cli.ts" }, 0),
 			makeToolCall("write", { path: "/src/commands.ts" }, 1),
-			makeAssistant([{ type: "text", text: "完成了 CLI 框架\n接下来需要实现子命令" }], 1),
+			makeAssistant(
+				[{ type: "text", text: "完成了 CLI 框架\n接下来需要实现子命令" }],
+				1,
+			),
 		];
 
-		vi.mocked(core.resolveSession).mockResolvedValue({ ok: true, filepath: "/s/t123.jsonl" });
+		vi.mocked(core.resolveSession).mockResolvedValue({
+			ok: true,
+			filepath: "/s/t123.jsonl",
+		});
 		vi.mocked(core.readJsonlFile).mockResolvedValue(entries);
 		vi.mocked(core.fmtTime).mockReturnValue("05-15 20:15:00");
 		vi.mocked(core.getSessionInfoFromEntries).mockReturnValue({
-			sessionId: "t123", filepath: "/s/t123.jsonl", startTime: "05-15 20:15:00",
-			model: "gpt-4", firstMsg: "帮我开发一个 CLI 工具",
-			editCount: 1, writeCount: 1,
+			sessionId: "t123",
+			filepath: "/s/t123.jsonl",
+			startTime: "05-15 20:15:00",
+			model: "gpt-4",
+			firstMsg: "帮我开发一个 CLI 工具",
+			editCount: 1,
+			writeCount: 1,
 			filesEdited: ["/src/cli.ts", "/src/commands.ts"],
-			status: "completed", userMsgCount: 2, assistantMsgCount: 3, toolCallCount: 2,
+			status: "completed",
+			userMsgCount: 2,
+			assistantMsgCount: 3,
+			toolCallCount: 2,
 		});
 
 		const result = await doTakeover("t123", 3);
@@ -101,7 +124,8 @@ describe("doTakeover", () => {
 
 	it("会话不存在返回错误消息", async () => {
 		vi.mocked(core.resolveSession).mockResolvedValue({
-			ok: false, error: "未找到会话: nonexistent",
+			ok: false,
+			error: "未找到会话: nonexistent",
 		});
 
 		const result = await doTakeover("nonexistent");
@@ -110,13 +134,24 @@ describe("doTakeover", () => {
 	});
 
 	it("空会话（只有 session 元信息）返回空字段", async () => {
-		vi.mocked(core.resolveSession).mockResolvedValue({ ok: true, filepath: "/s/empty.jsonl" });
+		vi.mocked(core.resolveSession).mockResolvedValue({
+			ok: true,
+			filepath: "/s/empty.jsonl",
+		});
 		vi.mocked(core.readJsonlFile).mockResolvedValue([makeSession()]);
 		vi.mocked(core.getSessionInfoFromEntries).mockReturnValue({
-			sessionId: "empty", filepath: "/s/empty.jsonl", startTime: "",
-			model: "", firstMsg: "", editCount: 0, writeCount: 0,
-			filesEdited: [], status: "empty", userMsgCount: 0,
-			assistantMsgCount: 0, toolCallCount: 0,
+			sessionId: "empty",
+			filepath: "/s/empty.jsonl",
+			startTime: "",
+			model: "",
+			firstMsg: "",
+			editCount: 0,
+			writeCount: 0,
+			filesEdited: [],
+			status: "empty",
+			userMsgCount: 0,
+			assistantMsgCount: 0,
+			toolCallCount: 0,
 		});
 
 		const result = await doTakeover("empty");
@@ -126,13 +161,24 @@ describe("doTakeover", () => {
 	});
 
 	it("readJsonlFile 返回空数组时容错", async () => {
-		vi.mocked(core.resolveSession).mockResolvedValue({ ok: true, filepath: "/s/bad.jsonl" });
+		vi.mocked(core.resolveSession).mockResolvedValue({
+			ok: true,
+			filepath: "/s/bad.jsonl",
+		});
 		vi.mocked(core.readJsonlFile).mockResolvedValue([]);
 		vi.mocked(core.getSessionInfoFromEntries).mockReturnValue({
-			sessionId: "bad", filepath: "/s/bad.jsonl", startTime: "",
-			model: "", firstMsg: "", editCount: 0, writeCount: 0,
-			filesEdited: [], status: "empty", userMsgCount: 0,
-			assistantMsgCount: 0, toolCallCount: 0,
+			sessionId: "bad",
+			filepath: "/s/bad.jsonl",
+			startTime: "",
+			model: "",
+			firstMsg: "",
+			editCount: 0,
+			writeCount: 0,
+			filesEdited: [],
+			status: "empty",
+			userMsgCount: 0,
+			assistantMsgCount: 0,
+			toolCallCount: 0,
 		});
 
 		const result = await doTakeover("bad");
@@ -148,13 +194,24 @@ describe("doTakeover", () => {
 			makeAssistant([{ type: "text", text: "s3" }], 2),
 		];
 
-		vi.mocked(core.resolveSession).mockResolvedValue({ ok: true, filepath: "/s/steps.jsonl" });
+		vi.mocked(core.resolveSession).mockResolvedValue({
+			ok: true,
+			filepath: "/s/steps.jsonl",
+		});
 		vi.mocked(core.readJsonlFile).mockResolvedValue(entries);
 		vi.mocked(core.getSessionInfoFromEntries).mockReturnValue({
-			sessionId: "steps", filepath: "/s/steps.jsonl", startTime: "",
-			model: "", firstMsg: "", editCount: 0, writeCount: 0,
-			filesEdited: [], status: "completed", userMsgCount: 0,
-			assistantMsgCount: 3, toolCallCount: 0,
+			sessionId: "steps",
+			filepath: "/s/steps.jsonl",
+			startTime: "",
+			model: "",
+			firstMsg: "",
+			editCount: 0,
+			writeCount: 0,
+			filesEdited: [],
+			status: "completed",
+			userMsgCount: 0,
+			assistantMsgCount: 3,
+			toolCallCount: 0,
 		});
 
 		const result = await doTakeover("steps", 2);
@@ -164,13 +221,24 @@ describe("doTakeover", () => {
 	});
 
 	it("输出经过 truncatedResult 包装", async () => {
-		vi.mocked(core.resolveSession).mockResolvedValue({ ok: true, filepath: "/s/w.jsonl" });
+		vi.mocked(core.resolveSession).mockResolvedValue({
+			ok: true,
+			filepath: "/s/w.jsonl",
+		});
 		vi.mocked(core.readJsonlFile).mockResolvedValue([makeSession()]);
 		vi.mocked(core.getSessionInfoFromEntries).mockReturnValue({
-			sessionId: "w", filepath: "/s/w.jsonl", startTime: "",
-			model: "", firstMsg: "", editCount: 0, writeCount: 0,
-			filesEdited: [], status: "empty", userMsgCount: 0,
-			assistantMsgCount: 0, toolCallCount: 0,
+			sessionId: "w",
+			filepath: "/s/w.jsonl",
+			startTime: "",
+			model: "",
+			firstMsg: "",
+			editCount: 0,
+			writeCount: 0,
+			filesEdited: [],
+			status: "empty",
+			userMsgCount: 0,
+			assistantMsgCount: 0,
+			toolCallCount: 0,
 		});
 
 		const result = await doTakeover("w");

@@ -2,9 +2,9 @@
  * session-takeover 提取函数：用户意图 + 修改文件 — 单元测试
  */
 
-import { describe, it, expect } from "vitest";
-import { makeSession, makeUser, makeToolCall } from "./helpers";
-import { extractUserIntent, extractModifiedFiles } from "../../takeover";
+import { describe, expect, it } from "vitest";
+import { extractModifiedFiles, extractUserIntent } from "../../takeover";
+import { makeSession, makeToolCall, makeUser } from "./helpers";
 
 // ── extractUserIntent ─────────────────────────────────────
 
@@ -33,8 +33,10 @@ describe("extractUserIntent", () => {
 	it("多条 user 消息取前 3 条", () => {
 		const entries = [
 			makeSession(),
-			makeUser("m1", 0), makeUser("m2", 1),
-			makeUser("m3", 2), makeUser("m4", 3),
+			makeUser("m1", 0),
+			makeUser("m2", 1),
+			makeUser("m3", 2),
+			makeUser("m4", 3),
 		];
 		expect(extractUserIntent(entries).length).toBeLessThanOrEqual(8);
 	});
@@ -62,7 +64,9 @@ describe("extractModifiedFiles", () => {
 	});
 
 	it("无 edit/write 返回空数组", () => {
-		expect(extractModifiedFiles([makeToolCall("read", { path: "/x.ts" }, 0)])).toEqual([]);
+		expect(
+			extractModifiedFiles([makeToolCall("read", { path: "/x.ts" }, 0)]),
+		).toEqual([]);
 	});
 
 	it("空 entries 返回空数组", () => {
@@ -74,6 +78,9 @@ describe("extractModifiedFiles", () => {
 			makeToolCall("edit", { path: "/zzz/last.ts" }, 0),
 			makeToolCall("write", { path: "/aaa/first.ts" }, 1),
 		];
-		expect(extractModifiedFiles(entries)).toEqual(["/aaa/first.ts", "/zzz/last.ts"]);
+		expect(extractModifiedFiles(entries)).toEqual([
+			"/aaa/first.ts",
+			"/zzz/last.ts",
+		]);
 	});
 });

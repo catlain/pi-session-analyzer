@@ -1,50 +1,50 @@
 {
-  "name": "pi-session-analyzer",
-  "version": "0.1.1",
-  "type": "commonjs",
-  "main": "index.ts",
-  "description": "Session search and analysis extension for pi-coding-agent",
-  "dependencies": {
-    "@pi-atelier/shared-utils": "^1.0.1"
-  },
-  "peerDependencies": {
-    "@earendil-works/pi-coding-agent": ">=0.74.0"
-  },
-  "peerDependenciesMeta": {
-    "@earendil-works/pi-coding-agent": {
-      "optional": true
-    }
-  },
-  "pi": {
-    "extensions": [
-      "."
-    ]
-  },
-  "devDependencies": {
-    "@types/node": "^25.6.2",
-    "@vitest/coverage-v8": "^3.2.4",
-    "typescript": "^6.0.3",
-    "vitest": "^3.0.0"
-  },
-  "files": [
-    "*.ts",
-    "tests/",
-    "README.md",
-    "README.en.md",
-    "tsconfig.json",
-    "vitest.config.ts",
-    "package.json"
-  ],
-  "keywords": [
-    "pi-package"
-  ],
-  "homepage": "https://catlain.github.io/pi-atelier/",
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com:catlain/pi-session-analyzer.git"
-  },
-  "bugs": {
-    "url": "https://github.com/catlain/pi-session-analyzer/issues"
-  },
-  "license": "MIT"
+	"name": "pi-session-analyzer",
+	"version": "0.1.1",
+	"type": "commonjs",
+	"main": "index.ts",
+	"description": "Session search and analysis extension for pi-coding-agent",
+	"dependencies": {
+		"@pi-atelier/shared-utils": "^1.0.1"
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-coding-agent": ">=0.74.0"
+	},
+	"peerDependenciesMeta": {
+		"@earendil-works/pi-coding-agent": {
+			"optional": true
+		}
+	},
+	"pi": {
+		"extensions": [
+			"."
+		]
+	},
+	"devDependencies": {
+		"@types/node": "^25.6.2",
+		"@vitest/coverage-v8": "^3.2.4",
+		"typescript": "^6.0.3",
+		"vitest": "^3.0.0"
+	},
+	"files": [
+		"*.ts",
+		"tests/",
+		"README.md",
+		"README.en.md",
+		"tsconfig.json",
+		"vitest.config.ts",
+		"package.json"
+	],
+	"keywords": [
+		"pi-package"
+	],
+	"homepage": "https://catlain.github.io/pi-atelier/",
+	"repository": {
+		"type": "git",
+		"url": "git+ssh://git@github.com:catlain/pi-session-analyzer.git"
+	},
+	"bugs": {
+		"url": "https://github.com/catlain/pi-session-analyzer/issues"
+	},
+	"license": "MIT"
 }

@@ -2,9 +2,13 @@
  * session-takeover 提取函数：最近步骤 + 下一步 + 决策 — 单元测试
  */
 
-import { describe, it, expect } from "vitest";
-import { makeUser, makeAssistant, makeAssistantWithTs } from "./helpers";
-import { extractRecentSteps, extractNextSteps, extractKeyDecisions } from "../../takeover";
+import { describe, expect, it } from "vitest";
+import {
+	extractKeyDecisions,
+	extractNextSteps,
+	extractRecentSteps,
+} from "../../takeover";
+import { makeAssistant, makeAssistantWithTs, makeUser } from "./helpers";
 
 // ── extractRecentSteps ────────────────────────────────────
 
@@ -23,7 +27,10 @@ describe("extractRecentSteps", () => {
 
 	it("摘要截断到 200 字符", () => {
 		const long = "x".repeat(300);
-		const r = extractRecentSteps([makeAssistant([{ type: "text", text: long }], 0)], 5);
+		const r = extractRecentSteps(
+			[makeAssistant([{ type: "text", text: long }], 0)],
+			5,
+		);
 		expect(r[0].summary.length).toBeLessThanOrEqual(800);
 	});
 
@@ -44,7 +51,8 @@ describe("extractRecentSteps", () => {
 
 	it("Step 包含 timestamp 和 summary", () => {
 		const r = extractRecentSteps(
-			[makeAssistantWithTs("hi", "2026-05-12T10:00:00.000Z", 0)], 5,
+			[makeAssistantWithTs("hi", "2026-05-12T10:00:00.000Z", 0)],
+			5,
 		);
 		expect(r[0]).toHaveProperty("timestamp");
 		expect(r[0]).toHaveProperty("summary");
@@ -126,10 +134,7 @@ describe("extractKeyDecisions", () => {
 	});
 
 	it("无决策模式返回空数组", () => {
-		const entries = [
-			makeUser("帮我看看这个文件", 0),
-			makeUser("运行测试", 1),
-		];
+		const entries = [makeUser("帮我看看这个文件", 0), makeUser("运行测试", 1)];
 		expect(extractKeyDecisions(entries)).toEqual([]);
 	});
 

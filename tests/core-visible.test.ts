@@ -3,8 +3,9 @@
  *
  * 测试 getVisibleSubagentFiles、extractSessionIdFromFirstLine、resolveVisibleSession
  */
-import { describe, it, expect, vi, afterEach } from "vitest";
+
 import type { Mock } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 // 模拟 node:os 和 node:fs/promises
 const mockTmpdir = vi.fn(() => "/tmp");
@@ -19,8 +20,11 @@ vi.mock("node:fs/promises", () => ({
 	readFile: mockReadFile,
 }));
 
-const { getVisibleSubagentFiles, extractSessionIdFromFirstLine, resolveVisibleSession } =
-	await import("../core-visible.js");
+const {
+	getVisibleSubagentFiles,
+	extractSessionIdFromFirstLine,
+	resolveVisibleSession,
+} = await import("../core-visible.js");
 
 // ── getVisibleSubagentFiles ──
 
@@ -37,20 +41,32 @@ describe("getVisibleSubagentFiles", () => {
 
 	it("只收集 pi-visible-* 目录的 session.jsonl", async () => {
 		mockTmpdir.mockReturnValue("/tmp");
-		mockReaddir.mockResolvedValue(["pi-visible-a1b2", "other-dir", "pi-visible-c3d4"]);
+		mockReaddir.mockResolvedValue([
+			"pi-visible-a1b2",
+			"other-dir",
+			"pi-visible-c3d4",
+		]);
 		mockStat.mockImplementation(async (p: string) => {
 			expect(p).toMatch(/[\\/]tmp[\\/]pi-visible-[^\\/]+[\\/]session\.jsonl$/);
 			return { isFile: () => true };
 		});
 		const result = await getVisibleSubagentFiles();
 		expect(result).toHaveLength(2);
-		expect(result[0]).toMatch(/[\\/]tmp[\\/]pi-visible-a1b2[\\/]session\.jsonl$/);
-		expect(result[1]).toMatch(/[\\/]tmp[\\/]pi-visible-c3d4[\\/]session\.jsonl$/);
+		expect(result[0]).toMatch(
+			/[\\/]tmp[\\/]pi-visible-a1b2[\\/]session\.jsonl$/,
+		);
+		expect(result[1]).toMatch(
+			/[\\/]tmp[\\/]pi-visible-c3d4[\\/]session\.jsonl$/,
+		);
 	});
 
 	it("跳过 stat 失败或无 session.jsonl 的目录", async () => {
 		mockTmpdir.mockReturnValue("/tmp");
-		mockReaddir.mockResolvedValue(["pi-visible-no-file", "pi-visible-ok", "pi-visible-bad"]);
+		mockReaddir.mockResolvedValue([
+			"pi-visible-no-file",
+			"pi-visible-ok",
+			"pi-visible-bad",
+		]);
 		let callCount = 0;
 		mockStat.mockImplementation(async (_p: string) => {
 			callCount++;
@@ -67,11 +83,15 @@ describe("getVisibleSubagentFiles", () => {
 
 describe("extractSessionIdFromFirstLine", () => {
 	it("有效 session 行返回 id", () => {
-		expect(extractSessionIdFromFirstLine('{"type":"session","id":"abc123"}')).toBe("abc123");
+		expect(
+			extractSessionIdFromFirstLine('{"type":"session","id":"abc123"}'),
+		).toBe("abc123");
 	});
 
 	it("非 session 类型返回 undefined", () => {
-		expect(extractSessionIdFromFirstLine('{"type":"message","id":"x"}')).toBeUndefined();
+		expect(
+			extractSessionIdFromFirstLine('{"type":"message","id":"x"}'),
+		).toBeUndefined();
 	});
 
 	it("无 id 字段返回 undefined", () => {
