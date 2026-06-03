@@ -2,6 +2,8 @@
  * session_search file 模式 — 查找修改过特定文件的会话
  */
 
+import * as path from "node:path";
+
 import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 import {
   type Entry,
@@ -57,7 +59,10 @@ export async function doFile(
       for (const part of content) {
         if (part.type === "toolCall" && (part.name === "edit" || part.name === "write")) {
           const pathArg = String((part.arguments ?? {}).path ?? "");
-          if (pathArg.includes(filePath) || filePath.includes(pathArg)) {
+          if (
+            path.normalize(pathArg).includes(path.normalize(filePath)) ||
+            path.normalize(filePath).includes(path.normalize(pathArg))
+          ) {
             found = true;
             if (part.name === "edit") editCount++;
             if (part.name === "write") writeCount++;
