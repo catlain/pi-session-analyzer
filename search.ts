@@ -74,9 +74,17 @@ export async function doGrep(
   let regex: RegExp;
   try {
     const flags = query === query.toLowerCase() ? "gi" : "g";
-    regex = new RegExp(query, flags);
+    // 多关键词自动 OR 语义："词A 词B 词C" → /词A|词B|词C/gi
+    // 如果用户已经用了 |（知道正则语法），保持原样
+    const parts = query.split(/\s+/).filter(Boolean);
+    const queryExpr = parts.length > 1 && !query.includes("|")
+      ? parts.join("|")
+      : query;
+    regex = new RegExp(queryExpr, flags);
   } catch {
-    regex = new RegExp(escapeRegex(query), "i");
+    // 正则语法错误 → 转义所有词再用 OR 连接
+    const parts = query.split(/\s+/).filter(Boolean).map(escapeRegex);
+    regex = new RegExp(parts.join("|"), "i");
   }
 
   const files = await getSessionFiles(sessionDir);
@@ -160,20 +168,14 @@ export async function doGrep(
   }
 
   const output = allMatches
-    .map(
-      (s) =>
-        `── ${s.sessionId.slice(0, 12)}  ${s.firstMsg}\n` +
-        s.matches
-          .map((m) => `  [entry#${m.entryIdx}] ${m.role} | ${m.text}`)
-          .join("\n") +
-        (s.truncatedCount > 0
-          ? `\n  ...还有 ${s.truncatedCount} 条匹配，用 session_analyze entries grep=${query} 查看更多`
-          : ""),
-    )
-    .join("\n\n");
+    .map((s) => {
+      const total = s.matches.length + s.truncatedCount;
+      return `── ${s.sessionId.slice(0, 18)}  (${total} 匹配)  ${s.firstMsg}`;
+    })
+    .join("\n");
 
   return truncatedResult(
-    `跨会话搜索 "${query}" — 在 ${allMatches.length} 个会话中找到匹配：\n\n${output}`,
+    `跨会话搜索 "${query}" — 在 ${allMatches.length} 个会话中找到匹配：\n\n${output}\n\n用 session_analyze(sessionId, "entries", grep="${query}") 查看具体会话内容。`,
     { toolName: "session_search", label: query, maxLines: SEARCH_MAX_LINES, maxBytes: SEARCH_MAX_BYTES },
   );
 }

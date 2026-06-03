@@ -3,9 +3,10 @@
  */
 
 import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
+import { matchToolName, extractStringValues, matchFile } from "@pi-atelier/shared-utils";
 import { type Entry, fmtTime } from "./core";
 import { extractText } from "./core";
-import { parseRange, indexDetail, filterByToolName, filterByFile, buildNavHint } from "./entries-nav";
+import { parseRange, indexDetail, buildNavHint } from "./entries-nav";
 
 // ── compact 模式辅助 ──────────────────────────────────
 
@@ -45,6 +46,39 @@ export interface DoEntriesOptions {
 	rawIndex?: number;
 	toolName?: string;
 	file?: string;
+}
+
+// ── 过滤 predicate（与 entries-nav 同逻辑）────────────
+
+/** 判断条目是否匹配指定 toolName */
+function hasToolNameEntry(entry: Entry, toolName: string): boolean {
+	if (!entry.message) return false;
+	if (entry.message.role === "assistant" && Array.isArray(entry.message.content)) {
+		for (const part of entry.message.content) {
+			if (part.type === "toolCall" && matchToolName(toolName, part.name)) return true;
+		}
+	}
+	if (matchToolName(toolName, entry.message.toolName ?? "")) return true;
+	return false;
+}
+
+/** 从条目的工具调用参数中提取所有字符串值 */
+function extractFilePaths(entry: Entry): string[] {
+	if (!entry.message) return [];
+	const paths: string[] = [];
+	if (entry.message.role === "assistant" && Array.isArray(entry.message.content)) {
+		for (const part of entry.message.content) {
+			if (part.type === "toolCall" && part.arguments) {
+				paths.push(...extractStringValues(part.arguments));
+			}
+		}
+	}
+	return paths;
+}
+
+/** 判断条目是否匹配指定文件路径 */
+function matchFileEntry(entry: Entry, file: string): boolean {
+	return matchFile(file, extractFilePaths(entry));
 }
 
 // ── extractEntryText（从 analyze.ts 移出）──────────────
@@ -117,15 +151,31 @@ export function doEntries(
 	}
 
 	let items = entries;
+	// origIndices[i] = 原始 entries 数组中的索引号（过滤后保留映射）
+	let origIndices = entries.map((_, i) => i);
+
+	// ── 过滤辅助：同步过滤 items 和 origIndices ──
+	function filterItems(predicate: (entry: Entry) => boolean) {
+		const newItems: Entry[] = [];
+		const newOrigIdx: number[] = [];
+		for (let i = 0; i < items.length; i++) {
+			if (predicate(items[i])) {
+				newItems.push(items[i]);
+				newOrigIdx.push(origIndices[i]);
+			}
+		}
+		items = newItems;
+		origIndices = newOrigIdx;
+	}
 
 	// ── toolName 过滤 ────────────────────────────
 	if (toolNameVal) {
-		items = filterByToolName(items, toolNameVal);
+		filterItems((entry) => hasToolNameEntry(entry, toolNameVal!));
 	}
 
 	// ── file 过滤 ───────────────────────────────
 	if (fileVal) {
-		items = filterByFile(items, fileVal);
+		filterItems((entry) => matchFileEntry(entry, fileVal!));
 	}
 
 	// ── grep 过滤（支持正则；无效正则 fallback 子串匹配）
@@ -137,24 +187,31 @@ export function doEntries(
 			// 无效正则 fallback
 		}
 		if (regex) {
-			items = items.filter((entry) => {
+			filterItems((entry) => {
 				const text = extractEntryText(entry);
 				return regex!.test(text);
 			});
 		} else {
 			const keyword = grepVal.toLowerCase();
-			items = items.filter((entry) => {
+			filterItems((entry) => {
 				const text = extractEntryText(entry);
 				return text.toLowerCase().includes(keyword);
 			});
 		}
 	}
 
-	// ── rawIndex 模式：在原始（未过滤）列表中定位，展示前后上下文 ─
+	// ── rawIndex 模式：用过滤后序号映射回原始 entries 的真实索引 ──
 	const rawIndexVal = (typeof limitOrOpts === "object" ? limitOrOpts.rawIndex : undefined);
 	if (rawIndexVal != null) {
+		if (rawIndexVal < 0 || rawIndexVal >= origIndices.length) {
+			return truncatedResult(
+				`❌ rawIndex ${rawIndexVal} 超出过滤后范围（0-${origIndices.length - 1}，共 ${origIndices.length} 条匹配）`,
+				{ toolName: "session_analyze", label: "entries", maxLines: 100, maxBytes: 10_000 },
+			);
+		}
+		const realIdx = origIndices[rawIndexVal];
 		return truncatedResult(
-			indexDetail(entries, rawIndexVal, compactVal),
+			indexDetail(entries, realIdx, compactVal),
 			{ toolName: "session_analyze", label: "entries", maxLines: ANALYZE_MAX_LINES, maxBytes: ANALYZE_MAX_BYTES },
 		);
 	}
@@ -188,13 +245,15 @@ export function doEntries(
 		start = 0;
 	}
 
+	const slicedOrigIndices = origIndices.slice(start, start + limitVal);
 	items = items.slice(start, start + limitVal);
 
 	const isCompact = compactVal === true;
 	const previewLen = isCompact ? 60 : 100;
 
 	const lines = items.map((entry, idx) => {
-		const globalIdx = start + idx;
+		const filteredIdx = start + idx;
+		const globalIdx = slicedOrigIndices[idx];  // 显示原始数组索引
 		const role = entry.message?.role ?? "";
 		const timeFull = entry.timestamp ? fmtTime(entry.timestamp) : "";
 		const timeShort = entry.timestamp ? fmtTimeShort(entry.timestamp) : "";

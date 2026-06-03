@@ -119,6 +119,40 @@ describe("doGrep", () => {
 		const text = result.content[0].text;
 		expect(text).toBeTruthy();
 	});
+
+	// ── 多关键词 OR 语义 ──────────────────────────────
+
+	it("多关键词（空格分隔）自动 OR 语义", async () => {
+		// "main.ts helper" → /main.ts|helper/gi
+		// session1 含 main.ts，session2 含 helper.ts → 两个都应命中
+		const result = await doGrep(tmpDir, "main.ts helper", 10, false);
+		const text = result.content[0].text;
+		expect(text).toContain("test001"); // 匹配 main.ts
+		expect(text).toContain("test002"); // 匹配 helper.ts
+	});
+
+	it("多关键词中有一个匹配就能搜到", async () => {
+		// "ZZZ_notfound main.ts" → /ZZZ_notfound|main.ts/gi
+		// session1 含 main.ts → 应命中
+		const result = await doGrep(tmpDir, "ZZZ_notfound main.ts", 10, false);
+		const text = result.content[0].text;
+		expect(text).toContain("test001");
+	});
+
+	it("包含 | 的 query 保持原样（用户正则）", async () => {
+		// "main.ts|Write" 是用户明确写的 OR 正则，应保持原样
+		const result = await doGrep(tmpDir, "main.ts|Write", 10, false);
+		const text = result.content[0].text;
+		expect(text).toContain("test001"); // main.ts
+		expect(text).toContain("test002"); // Write a new file
+	});
+
+	it("单个关键词不受影响", async () => {
+		const result = await doGrep(tmpDir, "main.ts", 10, false);
+		const text = result.content[0].text;
+		expect(text).toContain("test001");
+		expect(text).not.toContain("test002");
+	});
 });
 
 // ── doFile ────────────────────────────────────────────────

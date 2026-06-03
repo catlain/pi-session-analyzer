@@ -1,7 +1,8 @@
 /**
- * doGrep 增强功能测试 — entry index + 输出容量
+ * doGrep 增强功能测试 — 会话级输出格式
  *
- * 测试：doGrep 的 entry#N 格式、匹配上限、文本长度、大 toolCall arguments
+ * 测试：doGrep 只输出会话级概要（ID + 匹配数 + 标题），
+ * 不展开详细 entry 内容，引导 AI 用 session_analyze 查看详情
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
@@ -35,40 +36,39 @@ function cleanupSessionFiles() {
 	try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
 }
 
-// ── entry index (S3) ──────────────────────────────────
+// ── 会话级输出格式 ──────────────────────────────────────
 
-describe("doGrep entry index", () => {
+describe("doGrep 会话级概要输出", () => {
 	beforeEach(setupSessionFiles);
 	afterEach(cleanupSessionFiles);
 
-	it("输出包含 entry#N 格式（所有 entry 类型计数）", async () => {
+	it("输出包含会话 ID 和匹配数", async () => {
 		const result = await doGrep(tmpDir, "main\\.ts", 10, false);
 		const text = result.content[0].text;
-		// [0]=session, [1]=user("Edit main.ts"), [2]=asst(edit main.ts), [3]=asst("Done editing main.ts")
-		expect(text).toContain("entry#");
-		expect(text).toMatch(/entry#1/);
-		expect(text).toMatch(/entry#2/);
+		// 应包含 "N 匹配" 格式
+		expect(text).toMatch(/\d+ 匹配/);
+		// 应包含 session_analyze 引导
+		expect(text).toContain("session_analyze");
 	});
 
-	it("entry index 从 0 开始，session 类型也计入", async () => {
+	it("输出不包含详细 entry 内容（不再有 entry#N）", async () => {
+		const result = await doGrep(tmpDir, "main\\.ts", 10, false);
+		const text = result.content[0].text;
+		// 精简模式下不再展示 entry# 详情
+		expect(text).not.toContain("entry#");
+	});
+
+	it("搜索 project 能匹配 session cwd", async () => {
 		const result = await doGrep(tmpDir, "project", 10, false);
 		const text = result.content[0].text;
-		// session entry 的 cwd=/project，全局 index=0
-		expect(text).toContain("entry#0");
-	});
-
-	it("entry index 与 session_analyze entries index 对齐", async () => {
-		const result = await doGrep(tmpDir, "Done editing", 10, false);
-		const text = result.content[0].text;
-		// "Done editing main.ts" 是 index=3（session[0], user[1], asst-edit[2], asst-text[3]）
-		expect(text).toContain("entry#3");
+		expect(text).toMatch(/\d+ 匹配/);
 	});
 });
 
-// ── 输出容量 (S4) ─────────────────────────────────────
+// ── 输出容量（精简格式） ─────────────────────────────────
 
-describe("doGrep 输出容量", () => {
-	it("每会话最多 10 条匹配，超限显示提示", async () => {
+describe("doGrep 输出容量（精简格式）", () => {
+	it("多匹配会话只显示总数，不展开详情", async () => {
 		const manyMatchesDir = path.join(os.tmpdir(), `session-many-${Date.now()}`);
 		const subDir = path.join(manyMatchesDir, "20260512");
 		const fp = path.join(subDir, "20260512T120000_many.jsonl");
@@ -86,43 +86,16 @@ describe("doGrep 输出容量", () => {
 		try {
 			const result = await doGrep(manyMatchesDir, "keyword_match", 10, false);
 			const text = result.content[0].text;
-			const matchCount = (text.match(/entry#/g) || []).length;
-			expect(matchCount).toBe(10);
-			expect(text).toContain("还有");
-			expect(text).toContain("session_analyze");
+			// 应显示匹配数（15 条）
+			expect(text).toContain("15 匹配");
+			// 不应展开 entry 详情
+			expect(text).not.toContain("entry#");
 		} finally {
 			fs.rmSync(manyMatchesDir, { recursive: true, force: true });
 		}
 	});
 
-	it("匹配文本截断到 200 字符", async () => {
-		const longDir = path.join(os.tmpdir(), `session-long-${Date.now()}`);
-		const subDir = path.join(longDir, "20260512");
-		const fp = path.join(subDir, "20260512T130000_long.jsonl");
-		fs.mkdirSync(subDir, { recursive: true });
-
-		const longText = "A".repeat(500) + "TARGET_KEYWORD" + "B".repeat(500);
-		const entries = [
-			{ type: "session", cwd: "/test" },
-			{ type: "message", message: { role: "user", content: longText } },
-		];
-		fs.writeFileSync(fp, entries.map((e) => JSON.stringify(e)).join("\n"), "utf-8");
-
-		try {
-			const result = await doGrep(longDir, "TARGET_KEYWORD", 10, false);
-			const text = result.content[0].text;
-			expect(text).toContain("TARGET_KEYWORD");
-			const lines = text.split("\n").filter((l: string) => l.includes("entry#"));
-			for (const line of lines) {
-				const textPart = line.split("|").pop() ?? "";
-				expect(textPart.length).toBeLessThanOrEqual(201);
-			}
-		} finally {
-			fs.rmSync(longDir, { recursive: true, force: true });
-		}
-	});
-
-	it("大 toolCall arguments 跨会话搜索集成测试", async () => {
+	it("大 toolCall arguments 也能匹配到（会话级）", async () => {
 		const bigDir = path.join(os.tmpdir(), `session-big-${Date.now()}`);
 		const subDir = path.join(bigDir, "20260512");
 		const fp = path.join(subDir, "20260512T140000_bigargs.jsonl");
@@ -149,9 +122,10 @@ describe("doGrep 输出容量", () => {
 		try {
 			const result = await doGrep(bigDir, "INTEGRATION_TEST_MARKER", 10, false);
 			const text = result.content[0].text;
-			expect(text).toContain("INTEGRATION_TEST_MARKER");
-			expect(text).toContain("roadmap_plan");
-			expect(text).toContain("entry#");
+			// 应能找到匹配
+			expect(text).toContain("1 匹配");
+			// 不应展示 entry 详情（不含 roadmap_plan 或 entry#）
+			expect(text).not.toContain("entry#");
 		} finally {
 			fs.rmSync(bigDir, { recursive: true, force: true });
 		}
