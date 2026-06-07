@@ -67,7 +67,9 @@ export function extractMatchContext(entry: Entry, regex: RegExp): string {
 						m.index + m[0].length + CTX_WINDOW,
 					);
 					const ctx = sanitize(combined.slice(start, end));
-					parts.push(`🛠 ${part.name}: ${ctx}`);
+					// 始终显示工具名（关键词可能在参数深处，上下文不含工具名）
+					const prefix = ctx.startsWith(part.name) ? "" : `${part.name} `;
+					parts.push(`🛠 ${prefix}${ctx}`);
 				}
 			}
 		}

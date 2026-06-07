@@ -122,7 +122,8 @@ describe("extractMatchContext — toolCall 匹配", () => {
 		};
 		const result = extractMatchContext(entry, /UNIQUE_MARKER/);
 		expect(result).toContain("🛠");
-		expect(result).toContain("roadmap_plan");
+		// 关键词在参数中间，上下文应包含参数名和关键词，但不包含工具名（太远）
+		expect(result).toContain("target_key");
 		expect(result).toContain("UNIQUE_MARKER");
 		// 关键：不应该只取前 100 字符（前 100 字符里只有 field_0，没有 UNIQUE_MARKER）
 		expect(result).not.toContain("field_0");
