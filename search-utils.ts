@@ -32,7 +32,7 @@ export function extractMatchContext(entry: Entry, regex: RegExp): string {
 	const content = entry.message.content;
 	const parts: string[] = [];
 
-	const CTX_WINDOW = 200; // 匹配上下文窗口（±字符数）
+	const CTX_WINDOW = 60; // 匹配上下文窗口（±字符数），适配输出 150 字符截取
 	const sanitize = (s: string) =>
 		s.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 

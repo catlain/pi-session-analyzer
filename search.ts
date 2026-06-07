@@ -143,6 +143,9 @@ export async function doGrep(
 				if (!hasEdit) continue;
 			}
 
+			// 跳过没有 message 的条目（JSON 元数据行，对 AI 无用）
+			if (!entry.message) continue;
+
 			const serialized = JSON.stringify(entry);
 			if (!regex.test(serialized)) continue;
 
@@ -155,7 +158,7 @@ export async function doGrep(
 					.join("\n");
 				matches.push({
 					entryIdx,
-					role: entry.message?.role ?? "?",
+					role: entry.message.role ?? "unknown",
 					text: textSlice,
 				});
 			}
@@ -182,15 +185,30 @@ export async function doGrep(
 		};
 	}
 
+	const GREP_CONTEXT_LINES = 6; // 每个会话最多显示的匹配行数
+
 	const output = allMatches
 		.map((s) => {
 			const total = s.matches.length + s.truncatedCount;
-			return `── ${s.sessionId.slice(0, 18)}  (${total} 匹配)  ${s.firstMsg}`;
+			const sid = s.sessionId;
+			const header = `── ${sid}  (${total} 匹配)  ${s.firstMsg}`;
+			const previewLines = s.matches
+				.slice(0, GREP_CONTEXT_LINES)
+				.map(
+					(m) =>
+						`   [${m.entryIdx}] ${m.role.padEnd(9)} ${m.text.split("\n")[0].slice(0, 150)}`,
+				);
+			if (total > GREP_CONTEXT_LINES) {
+				previewLines.push(
+					`   ... 还有 ${total - GREP_CONTEXT_LINES} 条匹配`,
+				);
+			}
+			return header + "\n" + previewLines.join("\n");
 		})
-		.join("\n");
+		.join("\n\n");
 
 	return truncatedResult(
-		`跨会话搜索 "${query}" — 在 ${allMatches.length} 个会话中找到匹配：\n\n${output}\n\n用 session_analyze(sessionId, "entries", grep="${query}") 查看具体会话内容。`,
+		`跨会话搜索 "${query}" — 在 ${allMatches.length} 个会话中找到匹配：\n\n${output}\n\n用 session_analyze(sessionId, "entries", index=N) 跳转到指定条目查看详情，或 session_analyze(sessionId, "entries", grep="${query}") 浏览该会话所有匹配。`,
 		{
 			toolName: "session_search",
 			label: query,
