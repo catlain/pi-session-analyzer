@@ -43,6 +43,15 @@ const sessionSearchSchema = Type.Object({
 	editOnly: Type.Optional(
 		Type.Boolean({ description: "仅 grep 模式：只搜 edit/write 操作" }),
 	),
+	days: Type.Optional(
+		Type.Number({ description: "搜索最近 N 天的会话，默认 7 天。设为 0 表示不限制", default: 7 }),
+	),
+	startDate: Type.Optional(
+		Type.String({ description: "精确起始日期，格式 YYYY-MM-DD（设此参数时 days 被忽略）" }),
+	),
+	endDate: Type.Optional(
+		Type.String({ description: "精确结束日期，格式 YYYY-MM-DD（设此参数时 days 被忽略）" }),
+	),
 });
 
 const sessionAnalyzeSchema = Type.Object({
@@ -114,6 +123,9 @@ type SessionSearchParams = {
 	query?: string;
 	limit?: number;
 	editOnly?: boolean;
+	days?: number;
+	startDate?: string;
+	endDate?: string;
 };
 
 type SessionAnalyzeParams = {
@@ -174,6 +186,9 @@ export default function (pi: ExtensionAPI) {
 							params.query ?? "",
 							params.limit ?? 20,
 							params.editOnly ?? false,
+							params.days,
+							params.startDate,
+							params.endDate,
 						);
 					case "file":
 						return await doFile(dir, params.query ?? "", params.limit ?? 20);

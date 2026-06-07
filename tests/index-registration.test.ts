@@ -82,12 +82,12 @@ describe("index.ts — 工具注册与 session_search", () => {
 			undefined,
 			undefined,
 		);
-		expect(doGrep).toHaveBeenCalledWith("/mock/sessions", "error", 20, true);
+		expect(doGrep).toHaveBeenCalledWith("/mock/sessions", "error", 20, true, undefined, undefined, undefined);
 	});
 
 	it("session_search grep 默认 query 为空字符串", async () => {
 		await searchExecute("id", { action: "grep" }, null, undefined, undefined);
-		expect(doGrep).toHaveBeenCalledWith("/mock/sessions", "", 20, false);
+		expect(doGrep).toHaveBeenCalledWith("/mock/sessions", "", 20, false, undefined, undefined, undefined);
 	});
 
 	it("session_search file action 调用 doFile", async () => {

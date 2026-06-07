@@ -2,7 +2,7 @@
  * session_search 工具实现 — 跨会话搜索（grep/file/list）
  */
 
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 
@@ -63,11 +63,51 @@ export async function doList(sessionDir: string, limit: number) {
 	);
 }
 
+/** 从文件名解析会话时间戳（文件名格式：2026-05-21T02-32-56-378Z_uuid.jsonl） */
+function parseSessionTime(filepath: string): number {
+	const name = basename(filepath);
+	// 匹配文件名开头的 ISO 时间戳
+	const m = name.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z/);
+	if (m) {
+		const iso = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}.${m[7]}Z`;
+		return new Date(iso).getTime();
+	}
+	return 0; // 无时间戳的文件排最后
+}
+
+/** 解析 startDate/endDate 参数为毫秒时间戳 */
+function parseDateRange(
+	days?: number,
+	startDate?: string,
+	endDate?: string,
+): { startMs: number; endMs: number } {
+	const now = Date.now() + 1000; // +1s 缓冲，避免 mtime 略大于 now 被误过滤
+
+	if (startDate || endDate) {
+		// 精确日期模式：startDate/endDate 优先，days 被忽略
+		const start = startDate
+			? new Date(`${startDate}T00:00:00.000Z`).getTime()
+			: 0; // 无起始限制
+		const end = endDate
+			? new Date(`${endDate}T23:59:59.999Z`).getTime()
+			: now;
+		return { startMs: start, endMs: end };
+	}
+
+	// days 模式
+	const d = days ?? 7; // 默认 7 天
+	if (d === 0) return { startMs: 0, endMs: now }; // 0 = 不限制
+	return { startMs: now - d * 24 * 3600 * 1000, endMs: now };
+}
+
 export async function doGrep(
 	sessionDir: string,
 	query: string,
 	limit: number,
 	editOnly: boolean,
+	days?: number,
+	startDate?: string,
+	endDate?: string,
 ) {
 	if (!query) {
 		return {
@@ -91,8 +131,14 @@ export async function doGrep(
 	}
 
 	const files = await getSessionFiles(sessionDir);
+
+	// 时间过滤：只搜索时间范围内的会话
+	const { startMs, endMs } = parseDateRange(days, startDate, endDate);
+	const GREP_MAX_SESSIONS = 5; // 最多返回 5 个会话
+
 	const allMatches: Array<{
 		sessionId: string;
+		sessionTime: number;
 		firstMsg: string;
 		matches: Array<{
 			entryIdx: number;
@@ -104,7 +150,23 @@ export async function doGrep(
 	}> = [];
 
 	for (const fp of files) {
-		if (allMatches.length >= limit) break;
+		if (allMatches.length >= GREP_MAX_SESSIONS) break;
+
+		// 时间过滤
+		if (startMs > 0 || endMs < Date.now()) {
+			const sessionTime = parseSessionTime(fp);
+			if (sessionTime === 0) {
+				// 无时间戳前缀的文件，用 mtime 作为备选
+				try {
+					const mtime = (await stat(fp)).mtimeMs;
+					if (mtime < startMs || mtime > endMs) continue;
+				} catch {
+					continue;
+				}
+			} else if (sessionTime < startMs || sessionTime > endMs) {
+				continue;
+			}
+		}
 
 		const rawText = await tryReadFile(fp);
 		if (!rawText) continue;
