@@ -227,8 +227,8 @@ describe("doRaw", () => {
 		];
 		const result = doRaw(longEntry, 1);
 		const text = result.content[0].text;
-		// JSON 串应该被 .slice(0, 1000) 截断
-		expect(text.length).toBeLessThan(1050);
+		// JSON 串应该被 .slice(0, 10000) 截断
+		expect(text.length).toBeLessThan(10050);
 	});
 });
 

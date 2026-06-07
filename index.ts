@@ -93,13 +93,13 @@ const sessionAnalyzeSchema = Type.Object({
 	),
 	index: Type.Optional(
 		Type.Number({
-			description: "entries: 查看第 N 条详情（0-based，含前后 3 条上下文）",
+			description: "entries: 查看第 N 条详情（0-based，始终按原始会话索引定位，过滤后也直接用显示的序号跳转）",
 		}),
 	),
-	rawIndex: Type.Optional(
-		Type.Number({
+	rawEntry: Type.Optional(
+		Type.Boolean({
 			description:
-				"entries: 用原始会话索引定位上下文（grep/toolName 过滤后跳回原始上下文）。编号即列表中 [N] 显示的数字",
+				"entries: 仅与 index 联用。rawEntry=true 时返回该条目的完整原始内容（无上下文、无截断）",
 		}),
 	),
 	toolName: Type.Optional(
@@ -146,7 +146,7 @@ type SessionAnalyzeParams = {
 	compact?: boolean;
 	range?: string;
 	index?: number;
-	rawIndex?: number;
+	rawEntry?: boolean;
 	toolName?: string;
 	file?: string;
 };
@@ -274,8 +274,9 @@ export default function (pi: ExtensionAPI) {
 							compact: params.compact,
 							range: params.range,
 							index: params.index,
-							rawIndex: params.rawIndex,
+							rawEntry: params.rawEntry,
 							toolName: params.toolName,
+							file: params.file,
 						});
 					case "timeline":
 						return doTimeline(entries);

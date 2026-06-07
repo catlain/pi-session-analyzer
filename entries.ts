@@ -9,7 +9,12 @@ import {
 } from "@pi-atelier/shared-utils";
 import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 import { type Entry, extractText, fmtTime } from "./core";
-import { buildNavHint, indexDetail, parseRange } from "./entries-nav";
+import {
+	buildNavHint,
+	indexDetail,
+	parseRange,
+	rawEntryDetail,
+} from "./entries-nav";
 
 // ── compact 模式辅助 ──────────────────────────────────
 
@@ -46,7 +51,7 @@ export interface DoEntriesOptions {
 	compact?: boolean;
 	range?: string;
 	index?: number;
-	rawIndex?: number;
+	rawEntry?: boolean;
 	toolName?: string;
 	file?: string;
 }
@@ -224,33 +229,16 @@ export function doEntries(
 		}
 	}
 
-	// ── rawIndex 模式：用过滤后序号映射回原始 entries 的真实索引 ──
-	const rawIndexVal =
-		typeof limitOrOpts === "object" ? limitOrOpts.rawIndex : undefined;
-	if (rawIndexVal != null) {
-		if (rawIndexVal < 0 || rawIndexVal >= origIndices.length) {
+	// ── index 详情模式（始终在原始 entries 数组中定位） ────────
+	if (indexVal != null) {
+		// rawEntry=true: 只返回该条完整内容，无上下文、无截断
+		if (limitOrOpts.rawEntry) {
 			return truncatedResult(
-				`❌ rawIndex ${rawIndexVal} 超出过滤后范围（0-${origIndices.length - 1}，共 ${origIndices.length} 条匹配）`,
-				{
-					toolName: "session_analyze",
-					label: "entries",
-					maxLines: 100,
-					maxBytes: 10_000,
-				},
+				rawEntryDetail(entries, indexVal),
+				{ maxBytes: 50 * 1024 }, // rawEntry 放宽到 50KB
 			);
 		}
-		const realIdx = origIndices[rawIndexVal];
-		return truncatedResult(indexDetail(entries, realIdx, compactVal), {
-			toolName: "session_analyze",
-			label: "entries",
-			maxLines: ANALYZE_MAX_LINES,
-			maxBytes: ANALYZE_MAX_BYTES,
-		});
-	}
-
-	// ── index 详情模式（在过滤后列表中定位，直接返回） ────────
-	if (indexVal != null) {
-		return truncatedResult(indexDetail(items, indexVal, compactVal), {
+		return truncatedResult(indexDetail(entries, indexVal, compactVal), {
 			toolName: "session_analyze",
 			label: "entries",
 			maxLines: ANALYZE_MAX_LINES,

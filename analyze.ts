@@ -228,7 +228,7 @@ export function doRaw(entries: Entry[], limit: number) {
 	const items = entries.slice(-limit);
 	const lines = items.map(
 		(entry, idx) =>
-			`--- 条目 ${idx + 1} ---\n${JSON.stringify(entry).slice(0, 1000)}`,
+			`--- 条目 ${idx + 1} ---\n${JSON.stringify(entry).slice(0, 10000)}`,
 	);
 
 	return truncatedResult(

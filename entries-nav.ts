@@ -7,6 +7,7 @@ import {
 	matchFile,
 	matchToolName,
 } from "@pi-atelier/shared-utils";
+import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 import type { Entry } from "./core";
 import { fmtTime } from "./core";
 
@@ -145,10 +146,6 @@ export function buildNavHint(
 
 	// 其他功能提示
 	tips.push(`index=N  查看第 N 条详情`);
-	if (hasGrepOrFilter)
-		tips.push(
-			`rawIndex=N  用原始会话索引定位上下文（grep/toolName 过滤后跳回原始上下文）`,
-		);
 	if (!grepVal) tips.push(`grep="关键词"  按内容过滤`);
 	if (!toolNameVal) tips.push(`toolName="edit"  按工具名过滤`);
 
@@ -225,4 +222,22 @@ export function indexDetail(
 	}
 
 	return lines.join("\n");
+}
+
+/** 返回单条 entry 的完整原始内容（无上下文、无截断） */
+export function rawEntryDetail(entries: Entry[], index: number): string {
+	if (index < 0 || index >= entries.length) {
+		return `❌ 索引 ${index} 超出范围（0-${entries.length - 1}）`;
+	}
+
+	const entry = entries[index];
+	const role = entry.message?.role ?? "";
+	const time = entry.timestamp ? fmtTime(entry.timestamp) : "";
+	const text = fullText(entry);
+
+	const header = `[${index}] ${role} ${time}`;
+	if (entry.message?.toolName) {
+		return `${header} 工具: ${entry.message.toolName}\n${text}`;
+	}
+	return `${header}\n${text}`;
 }

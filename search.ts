@@ -29,6 +29,20 @@ export async function tryReadFile(fp: string): Promise<string | null> {
 	}
 }
 
+/** S3: 格式化工具统计为 Top 5 简要行 */
+function formatToolStats(
+	toolStats: Record<string, { calls: number; errors: number }>,
+): string {
+	const entries = Object.entries(toolStats)
+		.sort((a, b) => b[1].calls - a[1].calls);
+	if (entries.length === 0) return "";
+	const top5 = entries.slice(0, 5);
+	const rest = entries.length - 5;
+	const parts = top5.map(([name, stat]) => `${name}(${stat.calls})`);
+	if (rest > 0) parts.push(`+${rest}more`);
+	return `  🛠 ${parts.join(" ")}`;
+}
+
 export async function doList(sessionDir: string, limit: number) {
 	const files = await getSessionFiles(sessionDir);
 	const items = files.slice(0, limit);
@@ -45,10 +59,11 @@ export async function doList(sessionDir: string, limit: number) {
 			info.filesEdited.length > 0
 				? ` [✎ ${info.filesEdited.map((f) => basename(f)).join(", ")}]`
 				: "";
+		const toolLine = formatToolStats(info.toolStats);
 		return (
 			`${info.sessionId.slice(0, 18)}  ${info.startTime}  ` +
 			`${info.model.slice(0, 20)}  ${info.status}  ` +
-			`${info.firstMsg.slice(0, 60)}${edited}`
+			`${info.firstMsg.slice(0, 60)}${edited}${toolLine}`
 		);
 	});
 

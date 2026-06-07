@@ -56,6 +56,7 @@ export interface SessionInfo {
 	userMsgCount: number;
 	assistantMsgCount: number;
 	toolCallCount: number;
+	toolStats: Record<string, { calls: number; errors: number }>;
 }
 
 // ── 纯函数 ──────────────────────────────────────────────
@@ -185,6 +186,7 @@ export function getSessionInfoFromEntries(
 		userMsgCount: 0,
 		assistantMsgCount: 0,
 		toolCallCount: 0,
+		toolStats: summary.toolStats,
 	};
 
 	for (const entry of entries) {

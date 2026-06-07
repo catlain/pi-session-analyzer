@@ -49,6 +49,7 @@ export async function doFile(
 		let editCount = 0;
 		let writeCount = 0;
 		let found = false;
+		const operations: Array<{ tool: string; path: string; summary: string }> = [];
 
 		for (const entry of entries) {
 			if (entry.type !== "message" || !entry.message) continue;
@@ -68,6 +69,11 @@ export async function doFile(
 						found = true;
 						if (part.name === "edit") editCount++;
 						if (part.name === "write") writeCount++;
+						operations.push({
+							tool: part.name,
+							path: pathArg,
+							summary: String(part.arguments?.oldText ?? "").replace(/\n/g, " ").slice(0, 50),
+						});
 					}
 				}
 			}
@@ -82,6 +88,7 @@ export async function doFile(
 			editCount,
 			writeCount,
 			firstMsg: summary.firstMsg.slice(0, 60),
+			operations,
 		});
 	}
 
@@ -92,12 +99,22 @@ export async function doFile(
 	}
 
 	const output = results
-		.map(
-			(r) =>
+		.map((r) => {
+			const opLines = r.operations
+				.slice(0, 5) // S4: 每个会话最多展示 5 个操作
+				.map(
+					(op) =>
+						`      ${op.tool} ${path.basename(op.path)}: "${op.summary.replace(/\n/g, " ").slice(0, 50)}..."`,
+				);
+			const rest = r.operations.length - 5;
+				if (rest > 0) opLines.push(`      ... 还有 ${rest} 个操作`);
+			const ops = opLines.length > 0 ? `\n${opLines.join("\n")}` : "";
+			return (
 				`━━━ ${r.sessionId.slice(0, 18)}  ${r.time}\n` +
 				`    编辑 ${r.editCount} 次, 写入 ${r.writeCount} 次\n` +
-				`    摘要: ${r.firstMsg}`,
-		)
+				`    摘要: ${r.firstMsg}${ops}`
+			);
+		})
 		.join("\n\n");
 
 	return truncatedResult(
