@@ -3,6 +3,9 @@
 	"version": "0.1.1",
 	"type": "commonjs",
 	"main": "index.ts",
+	"scripts": {
+		"test": "npx vitest run"
+	},
 	"description": "Session search and analysis extension for pi-coding-agent",
 	"dependencies": {
 		"@pi-atelier/shared-utils": "^1.0.1"
@@ -14,6 +17,9 @@
 		"@earendil-works/pi-coding-agent": {
 			"optional": true
 		}
+	},
+	"optionalDependencies": {
+		"@earendil-works/pi-coding-agent": ">=0.74.0"
 	},
 	"pi": {
 		"extensions": [
