@@ -2,14 +2,14 @@
  * entries 导航辅助函数 — parseRange / index 详情 / toolName 过滤
  */
 
-import {
-	extractStringValues,
-	matchFile,
-	matchToolName,
-} from "@pi-atelier/shared-utils";
+import { matchFile, matchToolName } from "@pi-atelier/shared-utils";
 import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 import type { Entry } from "./core";
 import { fmtTime } from "./core";
+import {
+	extractFilePaths,
+	hasToolName,
+} from "./entries-utils";
 
 // ── range 解析 ────────────────────────────────────────
 
@@ -38,49 +38,9 @@ export function parseRange(
 
 const INDEX_DETAIL_MAX = 5000;
 
-/** 判断条目是否匹配指定 toolName（支持通配符/多值） */
-function hasToolName(entry: Entry, toolName: string): boolean {
-	if (!entry.message) return false;
-
-	// assistant 消息含 toolCalls
-	if (
-		entry.message.role === "assistant" &&
-		Array.isArray(entry.message.content)
-	) {
-		for (const part of entry.message.content) {
-			if (part.type === "toolCall" && matchToolName(toolName, part.name))
-				return true;
-		}
-	}
-
-	// toolResult 消息的 message.toolName
-	if (matchToolName(toolName, entry.message.toolName ?? "")) return true;
-
-	return false;
-}
-
 /** 按工具名过滤条目 */
 export function filterByToolName(entries: Entry[], toolName: string): Entry[] {
 	return entries.filter((e) => hasToolName(e, toolName));
-}
-
-/** 从条目的工具调用参数中提取所有字符串值（用于 file 过滤） */
-function extractFilePaths(entry: Entry): string[] {
-	if (!entry.message) return [];
-	const paths: string[] = [];
-
-	if (
-		entry.message.role === "assistant" &&
-		Array.isArray(entry.message.content)
-	) {
-		for (const part of entry.message.content) {
-			if (part.type === "toolCall" && part.arguments) {
-				paths.push(...extractStringValues(part.arguments));
-			}
-		}
-	}
-
-	return paths;
 }
 
 /** 按文件路径过滤条目 */

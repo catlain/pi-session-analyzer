@@ -2,19 +2,21 @@
  * entries action — 条目列表输出（含 compact 紧凑模式）
  */
 
-import {
-	extractStringValues,
-	matchFile,
-	matchToolName,
-} from "@pi-atelier/shared-utils";
+import { matchToolName } from "@pi-atelier/shared-utils";
 import { truncatedResult } from "@pi-atelier/shared-utils/tool-output";
 import { type Entry, extractText, fmtTime } from "./core";
 import {
 	buildNavHint,
+	filterByFile,
+	filterByToolName,
 	indexDetail,
 	parseRange,
 	rawEntryDetail,
 } from "./entries-nav";
+import {
+	hasToolName as hasToolNameCheck,
+	matchFileEntry,
+} from "./entries-utils";
 
 // ── compact 模式辅助 ──────────────────────────────────
 
@@ -54,46 +56,6 @@ export interface DoEntriesOptions {
 	rawEntry?: boolean;
 	toolName?: string;
 	file?: string;
-}
-
-// ── 过滤 predicate（与 entries-nav 同逻辑）────────────
-
-/** 判断条目是否匹配指定 toolName */
-function hasToolNameEntry(entry: Entry, toolName: string): boolean {
-	if (!entry.message) return false;
-	if (
-		entry.message.role === "assistant" &&
-		Array.isArray(entry.message.content)
-	) {
-		for (const part of entry.message.content) {
-			if (part.type === "toolCall" && matchToolName(toolName, part.name))
-				return true;
-		}
-	}
-	if (matchToolName(toolName, entry.message.toolName ?? "")) return true;
-	return false;
-}
-
-/** 从条目的工具调用参数中提取所有字符串值 */
-function extractFilePaths(entry: Entry): string[] {
-	if (!entry.message) return [];
-	const paths: string[] = [];
-	if (
-		entry.message.role === "assistant" &&
-		Array.isArray(entry.message.content)
-	) {
-		for (const part of entry.message.content) {
-			if (part.type === "toolCall" && part.arguments) {
-				paths.push(...extractStringValues(part.arguments));
-			}
-		}
-	}
-	return paths;
-}
-
-/** 判断条目是否匹配指定文件路径 */
-function matchFileEntry(entry: Entry, file: string): boolean {
-	return matchFile(file, extractFilePaths(entry));
 }
 
 // ── extractEntryText（从 analyze.ts 移出）──────────────
@@ -199,7 +161,7 @@ export function doEntries(
 
 	// ── toolName 过滤 ────────────────────────────
 	if (toolNameVal) {
-		filterItems((entry) => hasToolNameEntry(entry, toolNameVal!));
+		filterItems((entry) => hasToolNameCheck(entry, toolNameVal!));
 	}
 
 	// ── file 过滤 ───────────────────────────────
