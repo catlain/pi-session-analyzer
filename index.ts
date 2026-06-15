@@ -35,7 +35,7 @@ const sessionSearchSchema = Type.Object({
 		Type.Literal("list"),
 	]),
 	query: Type.Optional(
-		Type.String({ description: "搜索关键词 (grep) 或文件路径 (file)" }),
+		Type.String({ description: "搜索关键词 (grep) 或文件路径 (file)。grep 模式最多 3 个关键词，超过自动截断并提示" }),
 	),
 	limit: Type.Optional(
 		Type.Number({ description: "限制结果数，默认 20", default: 20 }),
@@ -161,10 +161,9 @@ export default function (pi: ExtensionAPI) {
 		label: "Session Search",
 		description:
 			"搜索 Pi 会话。支持三种模式：grep（跨会话全文搜索关键词）、file（查找修改过特定文件的会话）、list（列出最近会话）。",
-		promptSnippet: "搜索历史 Pi 会话：关键词、文件修改、会话列表",
+		promptSnippet: "搜索历史 Pi 会话",
 		promptGuidelines: [
-			"Use session_search to find past discussions, decisions, or file modifications across all Pi sessions.",
-			"Use action='grep' for keyword search, action='file' to find sessions that edited a file, action='list' to browse recent sessions.",
+			"action='grep' 全文搜索关键词，action='file' 按修改文件反查会话，action='list' 浏览最近会话。",
 		],
 		parameters: sessionSearchSchema,
 
@@ -231,13 +230,11 @@ export default function (pi: ExtensionAPI) {
 			"- digest: user/assistant 对话序列\n" +
 			"- branches: 分支分析（/tree 产生的平行分支）\n" +
 			"- takeover: 会话接手报告（5 维上下文）",
-		promptSnippet: "深入分析单个 Pi 会话的详情",
+		promptSnippet: "分析单个 Pi 会话的详情",
 		promptGuidelines: [
-			"Use session_analyze to inspect a specific session: summary, entries, timeline, subagent chains, or raw JSONL.",
-			"Use action='summary' for overview, action='entries' for compact list, action='chain' for subagent tracing, action='audit' to check for rule violations.",
-			"Use action='branches' to analyze /tree fork branches — shows each branch's key events separately.",
-			"Use action='takeover' to generate a handoff report for continuing work from a previous session (5 dimensions: user intent, modified files, recent steps, next steps, key decisions).",
-			"When timeline shows [B1]/[B2] labels, use action='branches' for detailed per-branch analysis.",
+			"action='summary' 看概览，action='entries' 看条目列表，action='timeline' 看时间线，action='chain' 追踪子代理链。",
+			"action='branches' 分析 /tree 分支；action='takeover' 生成接手报告（含修改文件、下一步、关键决策等 5 维上下文）。",
+			"action='audit' 检查违规；action='digest' 看 user/assistant 对话序列；action='entries' 配合 msgIndex 可看单条消息全文。",
 		],
 		parameters: sessionAnalyzeSchema,
 
