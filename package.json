@@ -4,7 +4,8 @@
 	"type": "commonjs",
 	"main": "index.ts",
 	"scripts": {
-		"test": "npx vitest run"
+		"test": "npx vitest run",
+		"typecheck": "tsc --noEmit"
 	},
 	"description": "Session search and analysis extension for pi-coding-agent",
 	"dependencies": {
