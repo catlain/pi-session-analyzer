@@ -77,9 +77,9 @@ export function fmtTime(tsStr: string): string {
 	try {
 		const d = new Date(tsStr);
 		if (Number.isNaN(d.getTime())) return tsStr.slice(0, 19);
-		const bj = new Date(d.getTime() + 8 * 3600_000);
+		const bj = d;
 		const pad = (n: number) => String(n).padStart(2, "0");
-		return `${pad(bj.getUTCMonth() + 1)}-${pad(bj.getUTCDate())} ${pad(bj.getUTCHours())}:${pad(bj.getUTCMinutes())}:${pad(bj.getUTCSeconds())}`;
+		return `${pad(bj.getMonth() + 1)}-${pad(bj.getDate())} ${pad(bj.getHours())}:${pad(bj.getMinutes())}:${pad(bj.getSeconds())}`;
 	} catch {
 		return tsStr.slice(0, 19);
 	}

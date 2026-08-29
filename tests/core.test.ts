@@ -21,7 +21,7 @@ import { escapeRegex, extractMatchContext } from "../search-utils";
 // ── parseSessionId ────────────────────────────────────────
 
 describe("parseSessionId", () => {
-	it("标准格式：20260512T170326_id123.jsonl", () => {
+	it("标准格式：20260512T170326_id123.jsonl — standard format", () => {
 		expect(parseSessionId("/sessions/20260512T170326_abc123def.jsonl")).toBe(
 			"abc123def",
 		);
@@ -55,23 +55,27 @@ describe("parseSessionId", () => {
 // ── fmtTime ───────────────────────────────────────────────
 
 describe("fmtTime", () => {
-	it("ISO 时间格式化为北京时间", () => {
-		// 2026-05-12T10:00:00Z = 北京时间 18:00:00
-		const result = fmtTime("2026-05-12T10:00:00.000Z");
-		expect(result).toContain("05-12");
-		expect(result).toContain("18:00:00");
+	it("ISO 时间格式化为机器本地时区 — formats to the machine local timezone", () => {
+		// Invariant: fmtTime must agree with the machine-local Date for the
+		// same instant, so it is correct in *any* TZ — not just Beijing.
+		const ts = "2026-05-12T10:00:00.000Z";
+		const result = fmtTime(ts);
+		const d = new Date(ts);
+		const pad = (n: number) => String(n).padStart(2, "0");
+		const expected = `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+		expect(result).toBe(expected);
 	});
 
-	it("空字符串返回 ?", () => {
+	it("空字符串返回 ? — empty string returns ?", () => {
 		expect(fmtTime("")).toBe("?");
 	});
 
-	it("无效时间字符串原样返回", () => {
-		const result = fmtTime("2026-05-12T10:00:00.000Z");
+	it("无效时间字符串原样返回 — invalid timestamp returns the raw input", () => {
+		const result = fmtTime("not-a-date");
 		expect(result).not.toBe("?");
 	});
 
-	it("null 输入容错", () => {
+	it("null 输入容错 — null input is tolerated", () => {
 		expect(fmtTime(null as unknown as string)).toBe("?");
 	});
 });
