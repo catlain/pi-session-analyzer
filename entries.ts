@@ -36,9 +36,9 @@ function fmtTimeShort(tsStr: string): string {
 	try {
 		const d = new Date(tsStr);
 		if (Number.isNaN(d.getTime())) return "";
-		const bj = new Date(d.getTime() + 8 * 3600_000);
+		const bj = d;
 		const pad = (n: number) => String(n).padStart(2, "0");
-		return `${pad(bj.getUTCHours())}:${pad(bj.getUTCMinutes())}`;
+		return `${pad(bj.getHours())}:${pad(bj.getMinutes())}`;
 	} catch {
 		return "";
 	}
