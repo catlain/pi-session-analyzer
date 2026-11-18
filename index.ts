@@ -162,9 +162,6 @@ export default function (pi: ExtensionAPI) {
 		description:
 			"搜索 Pi 会话。支持三种模式：grep（跨会话全文搜索关键词）、file（查找修改过特定文件的会话）、list（列出最近会话）。",
 		promptSnippet: "搜索历史 Pi 会话",
-		promptGuidelines: [
-			"action='grep' 全文搜索关键词，action='file' 按修改文件反查会话，action='list' 浏览最近会话。",
-		],
 		parameters: sessionSearchSchema,
 
 		async execute(
@@ -231,11 +228,6 @@ export default function (pi: ExtensionAPI) {
 			"- branches: 分支分析（/tree 产生的平行分支）\n" +
 			"- takeover: 会话接手报告（5 维上下文）",
 		promptSnippet: "分析单个 Pi 会话的详情",
-		promptGuidelines: [
-			"action='summary' 看概览，action='entries' 看条目列表，action='timeline' 看时间线，action='chain' 追踪子代理链。",
-			"action='branches' 分析 /tree 分支；action='takeover' 生成接手报告（含修改文件、下一步、关键决策等 5 维上下文）。",
-			"action='audit' 检查违规；action='digest' 看 user/assistant 对话序列；action='entries' 配合 msgIndex 可看单条消息全文。",
-		],
 		parameters: sessionAnalyzeSchema,
 
 		async execute(

@@ -51,11 +51,10 @@ describe("index.ts — 工具注册与 session_search", () => {
 		expect(names).toEqual(["session_search", "session_analyze"]);
 	});
 
-	it("session_search 包含 promptSnippet 和 promptGuidelines", () => {
+	it("session_search 包含 promptSnippet，guidelines 已按 prompt-guideline-hygiene 规范移除（desc 单份权威）", () => {
 		const tool = registerTool.mock.calls[0][0];
 		expect(tool.promptSnippet).toBeDefined();
-		expect(tool.promptGuidelines).toBeInstanceOf(Array);
-		expect(tool.promptGuidelines.length).toBeGreaterThan(0);
+		expect(tool.promptGuidelines).toBeUndefined();
 	});
 
 	it("session_search list action 调用 doList", async () => {
